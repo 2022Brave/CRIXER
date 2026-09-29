@@ -231,16 +231,27 @@ private fun CrixerBottomNavigation(
 ) {
     val isSimpleMode = displayMode == AppDisplayMode.SIMPLE
 
-    Row(
+    // Floating full-width Liquid Glass pill, matching the Home segmented-control language.
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xF0070B12))
-            .border(width = 0.6.dp, color = Color(0xFF182232))
             .navigationBarsPadding()
-            .padding(horizontal = 4.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(30.dp))
+                .background(Color(0xE6080E17))
+                .border(
+                    width = 0.8.dp,
+                    color = Color(0xFF243449),
+                    shape = RoundedCornerShape(30.dp)
+                )
+                .padding(horizontal = 5.dp, vertical = 5.dp),
+            horizontalArrangement = Arrangement.spacedBy(1.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
         // 1. HOME
         BottomNavItem(
             modifier = Modifier.weight(1f),
@@ -288,6 +299,7 @@ private fun CrixerBottomNavigation(
             isSelected = currentScreen == CrixerScreen.SETTINGS,
             onClick = { onNavigate(CrixerScreen.SETTINGS) }
         )
+        }
     }
 }
 
