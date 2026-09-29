@@ -43,9 +43,13 @@ class VerifiedCricketDataProvider(
         private const val CRICINFO_LIVE_URL = "https://www.cricinfo.com/live-cricket-score"
         private const val CRICINFO_UPCOMING_URL = "https://www.cricinfo.com/live-cricket-match-schedule-fixtures"
         private const val CRICINFO_RECENT_URL = "https://www.cricinfo.com/live-cricket-match-results"
+        private const val ICC_ODI_TEAM_RANKINGS_URL =
+            "https://www.icc-cricket.com/rankings/team-rankings/mens/odi"
 
-        // ICC Men's ODI top 12, rank date 23 Sep 2026.
-        private val TOP_12_CODES = setOf(
+        // Safety fallback only. Runtime ranking eligibility is refreshed from the ICC
+        // Men's ODI Team Rankings page and replaces this set when the official page
+        // can be reached.
+        private val FALLBACK_top12Codes = setOf(
             "IND", "NZ", "AUS", "SA", "PAK", "ENG",
             "SL", "AFG", "BAN", "WI", "ZIM", "IRE"
         )
@@ -77,6 +81,11 @@ class VerifiedCricketDataProvider(
         "OMAN" to Team("OMAN", "Oman", "OMA", "🇴🇲", 0xFFDB161B, 0xFFFFFFFF),
         "JPN" to Team("JPN", "Japan", "JPN", "🇯🇵", 0xFFBC002D, 0xFFFFFFFF)
     )
+
+    @Volatile
+    private var top12Codes: Set<String> = FALLBACK_top12Codes
+    @Volatile
+    private var rankingsFetchedAtMs: Long = 0L
 
     private val aliases = mapOf(
         "INDIA" to "IND", "IND" to "IND",
@@ -111,6 +120,7 @@ class VerifiedCricketDataProvider(
         endpoint: String,
         status: MatchStatus
     ): List<Match> = withContext(Dispatchers.IO) {
+        ensureTop12Codes()
         val apiMatches = fetchFromCricbuzzApi(endpoint, status)
         if (apiMatches.isNotEmpty()) return@withContext apiMatches
 
@@ -155,21 +165,205 @@ class VerifiedCricketDataProvider(
         emptyList()
     }
 
+    /**
+     * Cricbuzz changed its match-list markup. Do not depend on the old
+     * cb-match-card/cb-mtch-lst classes; match URLs are much more stable.
+     * The slug contains the two team codes (for example /sl-vs-nep-...).
+     */
     private fun fetchFromCricbuzzPage(url: String, status: MatchStatus): List<Match> = try {
         val document = Jsoup.connect(url)
             .userAgent("Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/128 Mobile Safari/537.36")
             .referrer("https://www.google.com/")
             .timeout(15_000)
+            .ignoreHttpErrors(true)
+            .followRedirects(true)
             .get()
 
-        document.select("li.cb-match-card").ifEmpty { document.select("div.cb-mtch-lst") }
-            .mapNotNull { parseCricbuzzCard(it, status) }
+        document.select("a[href*='/live-cricket-scores/']")
+            .mapNotNull { parseCricbuzzMatchLink(it, status) }
             .distinctBy { it.id }
-            .filter { it.team1.id in TOP_12_CODES || it.team2.id in TOP_12_CODES }
+            .filter { it.team1.id in top12Codes || it.team2.id in top12Codes }
     } catch (_: Exception) {
         emptyList()
     }
 
+    private fun parseCricbuzzMatchLink(
+        link: Element,
+        status: MatchStatus
+    ): Match? {
+        val href = link.attr("href").orEmpty()
+        val slug = href.substringAfter("/live-cricket-scores/", "")
+            .substringBefore("?")
+            .substringBefore("#")
+
+        val slugTeams = Regex(
+            """^([a-z]{2,6})-(?:vs|v)-([a-z]{2,6})(?:-|$)""",
+            RegexOption.IGNORE_CASE
+        ).find(slug)
+
+        val rawContainer = buildString {
+            append(link.text())
+            append(" ")
+            append(link.parent()?.text().orEmpty())
+            append(" ")
+            append(link.parent()?.parent()?.text().orEmpty())
+            append(" ")
+            append(slug.replace('-', ' '))
+        }
+
+        val codes = if (slugTeams != null) {
+            listOf(
+                resolveTeamToken(slugTeams.groupValues[1]),
+                resolveTeamToken(slugTeams.groupValues[2])
+            )
+        } else {
+            extractTeamCodes(rawContainer)
+        }.filterNotNull().distinct()
+
+        if (codes.size < 2 || codes[0] == codes[1]) return null
+
+        val code1 = codes[0]
+        val code2 = codes[1]
+        val team1 = teams[code1] ?: return null
+        val team2 = teams[code2] ?: return null
+
+        val containerText = cleanText(
+            link.parent()?.parent()?.text()
+                .orEmpty()
+                .ifBlank { link.parent()?.text().orEmpty() }
+                .ifBlank { link.text() }
+        )
+        val combinedText = cleanText("$containerText $slug")
+
+        if (combinedText.contains("U19", true) ||
+            combinedText.contains("UNDER-19", true) ||
+            combinedText.contains("WOMEN", true)
+        ) return null
+
+        val scoreValues = Regex(
+            """\b\d{1,3}\s*[-/]\s*\d{1,2}(?:\s*\(\d+(?:\.\d+)?\))?\b"""
+        ).findAll(containerText)
+            .map { it.value }
+            .distinct()
+            .toList()
+
+        val score1 = scoreValues.getOrNull(0)?.let(::parseScore) ?: Score()
+        val score2 = scoreValues.getOrNull(1)?.let(::parseScore) ?: Score()
+        val format = inferFormat(combinedText)
+
+        return Match(
+            id = "cricbuzz-web-" + (href.ifBlank { slug }).hashCode(),
+            title = cleanTitle(link.text().ifBlank { slug.replace('-', ' ') }, format),
+            venue = extractVenue(containerText),
+            format = format,
+            status = status,
+            team1 = team1,
+            team2 = team2,
+            innings1 = innings(1, code1, code2, score1, format),
+            innings2 = if (status == MatchStatus.UPCOMING) null else innings(2, code2, code1, score2, format),
+            currentInningsNumber = if (
+                status != MatchStatus.UPCOMING &&
+                (score2.runs > 0 || score2.wickets > 0 || score2.overs > 0f)
+            ) 2 else 1,
+            targetRuns = if (score1.runs > 0 && format != MatchFormat.TEST && status != MatchStatus.UPCOMING) {
+                score1.runs + 1
+            } else null,
+            requiredRuns = Regex(
+                """need(?:s)?\s+(\d+)\s+runs?""",
+                RegexOption.IGNORE_CASE
+            ).find(containerText)?.groupValues?.getOrNull(1)?.toIntOrNull(),
+            remainingBalls = Regex(
+                """(\d+)\s+balls?""",
+                RegexOption.IGNORE_CASE
+            ).find(containerText)?.groupValues?.getOrNull(1)?.toIntOrNull(),
+            requiredRunRate = null,
+            currentRunRate = if (score2.overs > 0f) score2.runs / score2.overs
+            else if (score1.overs > 0f) score1.runs / score1.overs else 0f,
+            situationSummary = containerText,
+            resultSummary = if (status == MatchStatus.COMPLETED) containerText else null,
+            scheduledDateText = if (status == MatchStatus.UPCOMING) containerText else null
+        )
+    }
+
+    private fun extractTeamCodes(text: String): List<String> =
+        aliases.entries
+            .sortedByDescending { it.key.length }
+            .mapNotNull { (alias, code) ->
+                if (Regex("""\b${Regex.escape(alias)}\b""", RegexOption.IGNORE_CASE).containsMatchIn(text)) {
+                    code
+                } else null
+            }
+            .distinct()
+            .take(2)
+
+    private fun resolveTeamToken(token: String): String? {
+        val normalized = token.uppercase(Locale.US)
+        return aliases[normalized]
+    }
+
+    private fun extractVenue(text: String): String {
+        val normalized = cleanText(text)
+        return normalized
+            .substringAfter("•", "")
+            .substringBefore("Match abandoned", "")
+            .substringBefore("won by", "")
+            .trim()
+    }
+
+    private suspend fun ensureTop12Codes() {
+        val now = System.currentTimeMillis()
+        if (now - rankingsFetchedAtMs < 6 * 60 * 60 * 1000L) return
+
+        val fetched = try {
+            val document = Jsoup.connect(ICC_ODI_TEAM_RANKINGS_URL)
+                .userAgent("Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/128 Mobile Safari/537.36")
+                .referrer("https://www.google.com/")
+                .timeout(15_000)
+                .ignoreHttpErrors(true)
+                .followRedirects(true)
+                .get()
+
+            document.select("table tbody tr")
+                .mapNotNull { row ->
+                    val position = Regex("""^0?(\d{1,2})\b""")
+                        .find(cleanText(row.text()))
+                        ?.groupValues?.getOrNull(1)
+                        ?.toIntOrNull()
+                    val code = resolveRankedTeam(row.text())
+                    if (position != null && position <= 12 && code != null) position to code else null
+                }
+                .sortedBy { it.first }
+                .map { it.second }
+                .toSet()
+        } catch (_: Exception) {
+            emptySet()
+        }
+
+        if (fetched.size >= 8) {
+            top12Codes = fetched
+        }
+        rankingsFetchedAtMs = now
+    }
+
+    private fun resolveRankedTeam(text: String): String? {
+        val names = listOf(
+            "New Zealand" to "NZ",
+            "South Africa" to "SA",
+            "West Indies" to "WI",
+            "Sri Lanka" to "SL",
+            "Afghanistan" to "AFG",
+            "Bangladesh" to "BAN",
+            "Zimbabwe" to "ZIM",
+            "Ireland" to "IRE",
+            "Australia" to "AUS",
+            "Pakistan" to "PAK",
+            "England" to "ENG",
+            "India" to "IND"
+        )
+        return names.firstOrNull { (name, _) ->
+            Regex("""\b${Regex.escape(name)}\b""", RegexOption.IGNORE_CASE).containsMatchIn(text)
+        }?.second
+    }
 
     private fun fetchFromCricinfoPage(
         url: String,
@@ -184,7 +378,7 @@ class VerifiedCricketDataProvider(
         document.select("a[href*='live-cricket-score']")
             .mapNotNull { parseCricinfoLink(it, status) }
             .distinctBy { it.id }
-            .filter { it.team1.id in TOP_12_CODES || it.team2.id in TOP_12_CODES }
+            .filter { it.team1.id in top12Codes || it.team2.id in top12Codes }
     } catch (_: Exception) {
         emptyList()
     }
@@ -336,7 +530,7 @@ class VerifiedCricketDataProvider(
                 title.contains("WOMEN")
 
             if (!youthOrWomen &&
-                (match.team1.id in TOP_12_CODES || match.team2.id in TOP_12_CODES)
+                (match.team1.id in top12Codes || match.team2.id in top12Codes)
             ) {
                 result += match
             }
