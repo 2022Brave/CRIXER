@@ -193,6 +193,11 @@ fun CrixerApp(
                         )
                         CrixerScreen.HOME -> HomeScreen(viewModel = viewModel)
                         CrixerScreen.MATCHES -> MatchesScreen(viewModel = viewModel)
+                        CrixerScreen.INDIA -> HomeScreen(
+                            viewModel = viewModel,
+                            teamCodeFilter = "IND",
+                            sectionTitle = "INDIA"
+                        )
                         CrixerScreen.MATCH_DETAIL -> LiveMatchScreen(viewModel = viewModel)
                         CrixerScreen.SETTINGS -> SettingsScreen(viewModel = viewModel)
                         CrixerScreen.LEAN_BACK -> LeanBackScreen(viewModel = viewModel)
@@ -215,7 +220,7 @@ fun CrixerApp(
 
 /**
  * Approved CRIXER V2 Bottom Navigation:
- * HOME | MATCHES | [LITE / PRO TOGGLE] | SETTINGS
+ * HOME | MATCHES | [LITE / PRO TOGGLE] | INDIA | SETTINGS
  */
 @Composable
 private fun CrixerBottomNavigation(
@@ -268,8 +273,18 @@ private fun CrixerBottomNavigation(
             onClick = { onNavigate(CrixerScreen.MATCHES) }
         )
 
+        // 4. INDIA — dedicated India men's international match feed
+        BottomNavItem(
+            modifier = Modifier.weight(0.9f),
+            label = "India",
+            selectedIcon = Icons.Filled.Flag,
+            unselectedIcon = Icons.Outlined.Flag,
+            isSelected = currentScreen == CrixerScreen.INDIA,
+            onClick = { onNavigate(CrixerScreen.INDIA) }
+        )
+
         // 3. CENTER TOGGLE: Unmistakable SIMPLE / IMMERSIVE Mode Selector
-        Box(modifier = Modifier.weight(1.35f), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.weight(1.25f), contentAlignment = Alignment.Center) {
             ModeSwitchButton(
                 isSimpleMode = isSimpleMode,
                 onSelectMode = onSelectMode
