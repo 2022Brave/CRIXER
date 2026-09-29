@@ -174,7 +174,7 @@ class VerifiedCricketDataProvider(
         )
 
         val titleTeams = Regex(
-            """^(.+?)\\s+vs\\s+(.+?)(?:,|\\s+-|$)""",
+            """^(.+?)\s+vs\s+(.+?)(?:,|\s+-|$)""",
             RegexOption.IGNORE_CASE
         ).find(rawTitle)
 
