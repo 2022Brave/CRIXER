@@ -104,8 +104,14 @@ class CrixerViewModel(
     init {
         viewModelScope.launch {
             repository.refreshData()
-            // Pre-load default player profile (Virat Kohli)
             _selectedPlayerProfile.value = repository.getPlayerProfile("ind-3")
+
+            // Keep live scores fresh without requiring a manual pull-to-refresh.
+            // The provider itself rejects stale/demo data.
+            while (true) {
+                delay(30_000)
+                repository.refreshData()
+            }
         }
     }
 
