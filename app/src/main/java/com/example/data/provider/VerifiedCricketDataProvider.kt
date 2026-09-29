@@ -9,6 +9,8 @@ import com.example.domain.model.Team
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Element
 import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
@@ -35,6 +37,12 @@ class VerifiedCricketDataProvider(
     companion object {
         private const val BASE_URL = "https://cricbuzz-live.vercel.app/v1/matches"
         private const val INTERNATIONAL = "international"
+        private const val CRICBUZZ_LIVE_URL = "https://www.cricbuzz.com/cricket-match/live-scores"
+        private const val CRICBUZZ_UPCOMING_URL = "https://www.cricbuzz.com/cricket-match/live-scores/upcoming-matches"
+        private const val CRICBUZZ_RECENT_URL = "https://www.cricbuzz.com/cricket-match/live-scores/recent-matches"
+        private const val CRICINFO_LIVE_URL = "https://www.cricinfo.com/live-cricket-score"
+        private const val CRICINFO_UPCOMING_URL = "https://www.cricinfo.com/live-cricket-match-schedule-fixtures"
+        private const val CRICINFO_RECENT_URL = "https://www.cricinfo.com/live-cricket-match-results"
 
         // ICC Men's ODI top 12, rank date 23 Sep 2026.
         private val TOP_12_CODES = setOf(
@@ -62,7 +70,12 @@ class VerifiedCricketDataProvider(
         "BAN" to Team("BAN", "Bangladesh", "BAN", "🇧🇩", 0xFF006A4E, 0xFFF42A41),
         "WI" to Team("WI", "West Indies", "WI", "🏝️", 0xFF7B002C, 0xFFFFC72C),
         "ZIM" to Team("ZIM", "Zimbabwe", "ZIM", "🇿🇼", 0xFF006400, 0xFFFFD700),
-        "IRE" to Team("IRE", "Ireland", "IRE", "🇮🇪", 0xFF169B62, 0xFFFF883E)
+        "IRE" to Team("IRE", "Ireland", "IRE", "🇮🇪", 0xFF169B62, 0xFFFF883E),
+        "NEP" to Team("NEP", "Nepal", "NEP", "🇳🇵", 0xFFDC143C, 0xFF003893),
+        "MLY" to Team("MLY", "Malaysia", "MLY", "🇲🇾", 0xFF010066, 0xFFFFCC00),
+        "HKC" to Team("HKC", "Hong Kong", "HKC", "🇭🇰", 0xFFDE2910, 0xFFFFFFFF),
+        "OMAN" to Team("OMAN", "Oman", "OMA", "🇴🇲", 0xFFDB161B, 0xFFFFFFFF),
+        "JPN" to Team("JPN", "Japan", "JPN", "🇯🇵", 0xFFBC002D, 0xFFFFFFFF)
     )
 
     private val aliases = mapOf(
@@ -77,7 +90,12 @@ class VerifiedCricketDataProvider(
         "BANGLADESH" to "BAN", "BAN" to "BAN",
         "WEST INDIES" to "WI", "WI" to "WI",
         "ZIMBABWE" to "ZIM", "ZIM" to "ZIM",
-        "IRELAND" to "IRE", "IRE" to "IRE"
+        "IRELAND" to "IRE", "IRE" to "IRE",
+        "NEPAL" to "NEP", "NEP" to "NEP",
+        "MALAYSIA" to "MLY", "MLY" to "MLY",
+        "HONG KONG" to "HKC", "HONGKONG" to "HKC", "HKC" to "HKC",
+        "OMAN" to "OMAN", "OMA" to "OMAN",
+        "JAPAN" to "JPN", "JPN" to "JPN"
     )
 
     override suspend fun getLiveMatches(): List<Match> =
@@ -93,29 +111,126 @@ class VerifiedCricketDataProvider(
         endpoint: String,
         status: MatchStatus
     ): List<Match> = withContext(Dispatchers.IO) {
-        try {
-            val url = BASE_URL + "/" + endpoint + "?type=" + INTERNATIONAL
-            val request = Request.Builder()
-                .url(url)
-                .header("Accept", "application/json")
-                .header("User-Agent", "CRIXER/1.0 Android")
-                .build()
+        val apiMatches = fetchFromCricbuzzApi(endpoint, status)
+        if (apiMatches.isNotEmpty()) return@withContext apiMatches
 
-            httpClient.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) return@withContext emptyList()
-                val body = response.body?.string().orEmpty()
-                if (body.isBlank()) return@withContext emptyList()
-
-                val matches = JSONObject(body)
-                    .optJSONObject("data")
-                    ?.optJSONArray("matches")
-                    ?: return@withContext emptyList()
-
-                parseMatches(matches, status)
-            }
-        } catch (_: Exception) {
-            emptyList()
+        val pageUrl = when (endpoint) {
+            "live" -> CRICBUZZ_LIVE_URL
+            "upcoming" -> CRICBUZZ_UPCOMING_URL
+            else -> CRICBUZZ_RECENT_URL
         }
+        fetchFromCricbuzzPage(pageUrl, status)
+    }
+
+    private fun fetchFromCricbuzzApi(
+        endpoint: String,
+        status: MatchStatus
+    ): List<Match> = try {
+        val url = BASE_URL + "/" + endpoint + "?type=" + INTERNATIONAL
+        val request = Request.Builder()
+            .url(url)
+            .header("Accept", "application/json")
+            .header("User-Agent", "CRIXER/1.0 Android")
+            .build()
+
+        httpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return@use emptyList()
+            val body = response.body?.string().orEmpty()
+            if (body.isBlank()) return@use emptyList()
+            val matches = JSONObject(body)
+                .optJSONObject("data")
+                ?.optJSONArray("matches")
+                ?: return@use emptyList()
+            parseMatches(matches, status)
+        }
+    } catch (_: Exception) {
+        emptyList()
+    }
+
+    private fun fetchFromCricbuzzPage(url: String, status: MatchStatus): List<Match> = try {
+        val document = Jsoup.connect(url)
+            .userAgent("Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/128 Mobile Safari/537.36")
+            .referrer("https://www.google.com/")
+            .timeout(15_000)
+            .get()
+
+        document.select("li.cb-match-card, div.cb-mtch-lst, div.cb-col.cb-col-100.cb-lv-main")
+            .mapNotNull { parseCricbuzzCard(it, status) }
+            .distinctBy { it.id }
+            .filter { it.team1.id in TOP_12_CODES || it.team2.id in TOP_12_CODES }
+    } catch (_: Exception) {
+        emptyList()
+    }
+
+    private fun parseCricbuzzCard(card: Element, status: MatchStatus): Match? {
+        val teamNodes = card.select(".cb-hmscg-tm-name span, .cb-hmscg-tm-name")
+            .map { cleanText(it.text()) }
+            .filter { it.isNotBlank() }
+            .distinct()
+
+        if (teamNodes.size < 2) return null
+
+        val titleNode = card.selectFirst("a[title], a")
+        val rawTitle = cleanText(
+            titleNode?.attr("title").orEmpty().ifBlank { titleNode?.text().orEmpty() }
+        )
+
+        val code1 = resolveTeam(teamNodes[0], rawTitle) ?: return null
+        val code2 = resolveTeam(teamNodes[1], rawTitle, code1) ?: return null
+        if (code1 == code2) return null
+
+        val team1 = teams[code1] ?: return null
+        val team2 = teams[code2] ?: return null
+        val format = inferFormat(rawTitle + " " + card.text())
+
+        val scoreNodes = card.select(".cb-ovr-flo, .cb-hmscg-tm-bat, .cb-hmscg-tm-bwl")
+            .map { cleanText(it.text()) }
+            .filter { it.matches(Regex(""".*\d+.*""")) }
+
+        val score1 = scoreNodes.getOrNull(0)?.let(::parseScore) ?: Score()
+        val score2 = scoreNodes.getOrNull(1)?.let(::parseScore) ?: Score()
+        val innings1 = innings(1, code1, code2, score1, format)
+        val innings2 = innings(2, code2, code1, score2, format)
+
+        val cardText = cleanText(card.text())
+        val statusText = cleanText(
+            card.selectFirst(".cb-mtch-crd-state, .cb-text-complete, .cb-text-preview")
+                ?.text().orEmpty()
+        )
+        val overview = statusText.ifBlank { cardText }
+
+        val currentInnings = if (
+            status != MatchStatus.UPCOMING &&
+            (score2.runs > 0 || score2.wickets > 0 || score2.overs > 0f)
+        ) 2 else 1
+
+        val schedule = if (status == MatchStatus.UPCOMING) {
+            cardText.split("  ").firstOrNull {
+                it.contains("AM", true) || it.contains("PM", true) ||
+                    it.contains("Today", true) || it.contains("Tomorrow", true)
+            }
+        } else null
+
+        return Match(
+            id = "cricbuzz-web-" + (titleNode?.attr("href").orEmpty().ifBlank { rawTitle }).hashCode(),
+            title = cleanTitle(rawTitle, format),
+            venue = "",
+            format = format,
+            status = status,
+            team1 = team1,
+            team2 = team2,
+            innings1 = innings1,
+            innings2 = if (status == MatchStatus.UPCOMING) null else innings2,
+            currentInningsNumber = currentInnings,
+            targetRuns = null,
+            requiredRuns = null,
+            remainingBalls = null,
+            requiredRunRate = null,
+            currentRunRate = if (currentInnings == 2 && score2.overs > 0f) score2.runs / score2.overs else if (score1.overs > 0f) score1.runs / score1.overs else 0f,
+            situationSummary = overview,
+            resultSummary = if (status == MatchStatus.COMPLETED) overview.ifBlank { null } else null,
+            scheduledDateText = schedule
+        )
     }
 
     private fun parseMatches(array: JSONArray, status: MatchStatus): List<Match> {
