@@ -119,7 +119,15 @@ class VerifiedCricketDataProvider(
             "upcoming" -> CRICBUZZ_UPCOMING_URL
             else -> CRICBUZZ_RECENT_URL
         }
-        fetchFromCricbuzzPage(pageUrl, status)
+        val pageMatches = fetchFromCricbuzzPage(pageUrl, status)
+        if (pageMatches.isNotEmpty()) return@withContext pageMatches
+
+        val cricinfoUrl = when (endpoint) {
+            "live" -> CRICINFO_LIVE_URL
+            "upcoming" -> CRICINFO_UPCOMING_URL
+            else -> CRICINFO_RECENT_URL
+        }
+        fetchFromCricinfoPage(cricinfoUrl, status)
     }
 
     private fun fetchFromCricbuzzApi(
@@ -160,6 +168,72 @@ class VerifiedCricketDataProvider(
             .filter { it.team1.id in TOP_12_CODES || it.team2.id in TOP_12_CODES }
     } catch (_: Exception) {
         emptyList()
+    }
+
+
+    private fun fetchFromCricinfoPage(
+        url: String,
+        status: MatchStatus
+    ): List<Match> = try {
+        val document = Jsoup.connect(url)
+            .userAgent("Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/128 Mobile Safari/537.36")
+            .referrer("https://www.google.com/")
+            .timeout(15_000)
+            .get()
+
+        document.select("a[href*='live-cricket-score']")
+            .mapNotNull { parseCricinfoLink(it, status) }
+            .distinctBy { it.id }
+            .filter { it.team1.id in TOP_12_CODES || it.team2.id in TOP_12_CODES }
+    } catch (_: Exception) {
+        emptyList()
+    }
+
+    private fun parseCricinfoLink(
+        link: Element,
+        status: MatchStatus
+    ): Match? {
+        val rawTitle = cleanText(link.text().ifBlank { link.attr("title") })
+        if (rawTitle.isBlank()) return null
+
+        val matchTeams = Regex(
+            """^(.+?)\s+(?:vs|v)\s+(.+?)(?:\s+-|,|$)""",
+            RegexOption.IGNORE_CASE
+        ).find(rawTitle) ?: return null
+
+        val code1 = resolveTeam(matchTeams.groupValues[1], rawTitle) ?: return null
+        val code2 = resolveTeam(matchTeams.groupValues[2], rawTitle, code1) ?: return null
+        if (code1 == code2) return null
+
+        val parentText = cleanText(link.parent()?.text().orEmpty())
+        val scores = Regex(
+            """\b\d{1,3}\s*[-/]\s*\d{1,2}(?:\s*\(\d+(?:\.\d+)?\))?\b"""
+        ).findAll(parentText).map { it.value }.toList()
+
+        val score1 = scores.getOrNull(0)?.let(::parseScore) ?: Score()
+        val score2 = scores.getOrNull(1)?.let(::parseScore) ?: Score()
+        val format = inferFormat(rawTitle + " " + parentText)
+
+        return Match(
+            id = "cricinfo-web-" + link.attr("href").hashCode(),
+            title = cleanTitle(rawTitle, format),
+            venue = "",
+            format = format,
+            status = status,
+            team1 = teams[code1] ?: return null,
+            team2 = teams[code2] ?: return null,
+            innings1 = innings(1, code1, code2, score1, format),
+            innings2 = if (status == MatchStatus.UPCOMING) null else innings(2, code2, code1, score2, format),
+            currentInningsNumber = if (score2.runs > 0 || score2.wickets > 0 || score2.overs > 0f) 2 else 1,
+            targetRuns = null,
+            requiredRuns = null,
+            remainingBalls = null,
+            requiredRunRate = null,
+            currentRunRate = if (score2.overs > 0f) score2.runs / score2.overs else if (score1.overs > 0f) score1.runs / score1.overs else 0f,
+            situationSummary = parentText,
+            resultSummary = if (status == MatchStatus.COMPLETED) parentText.ifBlank { null } else null,
+            scheduledDateText = if (status == MatchStatus.UPCOMING) parentText.ifBlank { null } else null
+        )
     }
 
     private fun parseCricbuzzCard(card: Element, status: MatchStatus): Match? {
