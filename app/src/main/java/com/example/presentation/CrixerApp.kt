@@ -237,12 +237,13 @@ private fun CrixerBottomNavigation(
             .background(Color(0xF0070B12))
             .border(width = 0.6.dp, color = Color(0xFF182232))
             .navigationBarsPadding()
-            .padding(horizontal = 6.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.SpaceAround,
+            .padding(horizontal = 4.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // 1. HOME
         BottomNavItem(
+            modifier = Modifier.weight(1f),
             label = "Home",
             selectedIcon = Icons.Filled.Home,
             unselectedIcon = Icons.Outlined.Home,
@@ -252,6 +253,7 @@ private fun CrixerBottomNavigation(
 
         // 2. MATCHES
         BottomNavItem(
+            modifier = Modifier.weight(1f),
             label = "Matches",
             selectedIcon = Icons.Filled.SportsCricket,
             unselectedIcon = Icons.Outlined.SportsCricket,
@@ -260,13 +262,16 @@ private fun CrixerBottomNavigation(
         )
 
         // 3. CENTER TOGGLE: Unmistakable SIMPLE / IMMERSIVE Mode Selector
-        ModeSwitchButton(
-            isSimpleMode = isSimpleMode,
-            onSelectMode = onSelectMode
-        )
+        Box(modifier = Modifier.weight(1.85f), contentAlignment = Alignment.Center) {
+            ModeSwitchButton(
+                isSimpleMode = isSimpleMode,
+                onSelectMode = onSelectMode
+            )
+        }
 
         // 4. FOLLOWING
         BottomNavItem(
+            modifier = Modifier.weight(1f),
             label = "Following",
             selectedIcon = Icons.Filled.Star,
             unselectedIcon = Icons.Outlined.StarOutline,
@@ -276,6 +281,7 @@ private fun CrixerBottomNavigation(
 
         // 5. SETTINGS
         BottomNavItem(
+            modifier = Modifier.weight(1f),
             label = "Settings",
             selectedIcon = Icons.Filled.Settings,
             unselectedIcon = Icons.Outlined.Settings,
@@ -319,13 +325,14 @@ private fun ModeSwitchButton(
         isSimpleMode = isSimpleMode,
         density = SegmentDensity.COMPACT,
         modifier = Modifier
-            .width(172.dp)
+            .fillMaxWidth()
             .testTag("mode_toggle_bottom_bar")
     )
 }
 
 @Composable
 private fun BottomNavItem(
+    modifier: Modifier = Modifier,
     label: String,
     selectedIcon: ImageVector,
     unselectedIcon: ImageVector,
@@ -335,7 +342,7 @@ private fun BottomNavItem(
     val interactionSource = remember { MutableInteractionSource() }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .clickable(
                 interactionSource = interactionSource,
