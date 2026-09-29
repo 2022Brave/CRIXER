@@ -40,12 +40,10 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsCricket
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Subject
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.SportsCricket
-import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -78,7 +76,6 @@ import com.example.presentation.components.LiquidGlassSegmentItem
 import com.example.presentation.components.LiquidGlassTransition
 import com.example.presentation.components.SegmentDensity
 import com.example.presentation.screens.CricketGlanceScreen
-import com.example.presentation.screens.FollowingScreen
 import com.example.presentation.screens.HomeScreen
 import com.example.presentation.screens.LeanBackScreen
 import com.example.presentation.screens.LiveMatchScreen
@@ -197,7 +194,6 @@ fun CrixerApp(
                         CrixerScreen.HOME -> HomeScreen(viewModel = viewModel)
                         CrixerScreen.MATCHES -> MatchesScreen(viewModel = viewModel)
                         CrixerScreen.MATCH_DETAIL -> LiveMatchScreen(viewModel = viewModel)
-                        CrixerScreen.FOLLOWING -> FollowingScreen(viewModel = viewModel)
                         CrixerScreen.SETTINGS -> SettingsScreen(viewModel = viewModel)
                         CrixerScreen.LEAN_BACK -> LeanBackScreen(viewModel = viewModel)
                         CrixerScreen.CRICKET_GLANCE -> CricketGlanceScreen(viewModel = viewModel)
@@ -219,7 +215,7 @@ fun CrixerApp(
 
 /**
  * Approved CRIXER V2 Bottom Navigation:
- * HOME | MATCHES | [SIMPLE / IMMERSIVE TOGGLE] | FOLLOWING | SETTINGS
+ * HOME | MATCHES | [LITE / PRO TOGGLE] | SETTINGS
  */
 @Composable
 private fun CrixerBottomNavigation(
@@ -279,16 +275,6 @@ private fun CrixerBottomNavigation(
                 onSelectMode = onSelectMode
             )
         }
-
-        // 4. FOLLOWING
-        BottomNavItem(
-            modifier = Modifier.weight(1f),
-            label = "Following",
-            selectedIcon = Icons.Filled.Star,
-            unselectedIcon = Icons.Outlined.StarOutline,
-            isSelected = currentScreen == CrixerScreen.FOLLOWING,
-            onClick = { onNavigate(CrixerScreen.FOLLOWING) }
-        )
 
         // 5. SETTINGS
         BottomNavItem(
