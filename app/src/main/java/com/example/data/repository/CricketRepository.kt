@@ -52,7 +52,10 @@ class CricketRepository(
         _completedMatches.value = completed
         _upcomingMatches.value = upcoming
 
-        if (_selectedMatch.value == null && live.isNotEmpty()) {
+        // A previously selected live match must not survive a refresh when it is no longer live.
+        if (live.isEmpty() && _selectedMatch.value?.status == MatchStatus.LIVE) {
+            _selectedMatch.value = null
+        } else if (_selectedMatch.value == null && live.isNotEmpty()) {
             _selectedMatch.value = live.first()
         }
 
