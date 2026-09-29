@@ -154,7 +154,7 @@ class VerifiedCricketDataProvider(
             .timeout(15_000)
             .get()
 
-        document.select("li.cb-match-card, div.cb-mtch-lst, div.cb-col.cb-col-100.cb-lv-main")
+        document.select("li.cb-match-card").ifEmpty { document.select("div.cb-mtch-lst") }
             .mapNotNull { parseCricbuzzCard(it, status) }
             .distinctBy { it.id }
             .filter { it.team1.id in TOP_12_CODES || it.team2.id in TOP_12_CODES }
@@ -168,15 +168,31 @@ class VerifiedCricketDataProvider(
             .filter { it.isNotBlank() }
             .distinct()
 
-        if (teamNodes.size < 2) return null
-
         val titleNode = card.selectFirst("a[title], a")
         val rawTitle = cleanText(
             titleNode?.attr("title").orEmpty().ifBlank { titleNode?.text().orEmpty() }
         )
 
-        val code1 = resolveTeam(teamNodes[0], rawTitle) ?: return null
-        val code2 = resolveTeam(teamNodes[1], rawTitle, code1) ?: return null
+        val titleTeams = Regex(
+            """^(.+?)\\s+vs\\s+(.+?)(?:,|\\s+-|$)""",
+            RegexOption.IGNORE_CASE
+        ).find(rawTitle)
+
+        val candidates = if (teamNodes.size >= 2) {
+            teamNodes
+        } else if (titleTeams != null) {
+            listOf(
+                cleanText(titleTeams.groupValues[1]),
+                cleanText(titleTeams.groupValues[2])
+            )
+        } else {
+            emptyList()
+        }
+
+        if (candidates.size < 2) return null
+
+        val code1 = resolveTeam(candidates[0], rawTitle) ?: return null
+        val code2 = resolveTeam(candidates[1], rawTitle, code1) ?: return null
         if (code1 == code2) return null
 
         val team1 = teams[code1] ?: return null
