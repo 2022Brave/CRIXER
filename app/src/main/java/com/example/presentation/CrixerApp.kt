@@ -273,7 +273,7 @@ private fun CrixerBottomNavigation(
         )
 
         // 3. CENTER TOGGLE: Unmistakable SIMPLE / IMMERSIVE Mode Selector
-        Box(modifier = Modifier.weight(1.85f), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.weight(1.35f), contentAlignment = Alignment.Center) {
             ModeSwitchButton(
                 isSimpleMode = isSimpleMode,
                 onSelectMode = onSelectMode
@@ -317,13 +317,13 @@ private fun ModeSwitchButton(
         listOf(
             LiquidGlassSegmentItem(
                 key = AppDisplayMode.SIMPLE,
-                label = "SIMPLE",
+                label = "LITE",
                 accentColor = Color(0xFF64748B),
                 testTag = "mode_switch_simple"
             ),
             LiquidGlassSegmentItem(
                 key = AppDisplayMode.IMMERSIVE,
-                label = "IMMERSIVE",
+                label = "PRO",
                 accentColor = Color(0xFF38BDF8),
                 testTag = "mode_switch_immersive"
             )
@@ -361,7 +361,7 @@ private fun BottomNavItem(
                 indication = null,
                 onClick = onClick
             )
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = 4.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -369,13 +369,13 @@ private fun BottomNavItem(
             imageVector = if (isSelected) selectedIcon else unselectedIcon,
             contentDescription = label,
             tint = if (isSelected) CrixerWhite else CrixerTextSecondary,
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(18.dp)
         )
         Spacer(modifier = Modifier.height(3.dp))
         Text(
             text = label,
             color = if (isSelected) CrixerWhite else CrixerTextSecondary,
-            fontSize = 10.sp,
+            fontSize = 9.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
         )
     }
