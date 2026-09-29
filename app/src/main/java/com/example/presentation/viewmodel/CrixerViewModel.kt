@@ -21,7 +21,6 @@ enum class CrixerScreen {
     HOME,
     MATCHES,
     MATCH_DETAIL,
-    FOLLOWING,
     SETTINGS,
     LEAN_BACK,
     CRICKET_GLANCE
