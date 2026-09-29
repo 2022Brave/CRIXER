@@ -160,6 +160,7 @@ class VerifiedCricketDataProvider(
                 ?.optJSONArray("matches")
                 ?: return@use emptyList()
             parseMatches(matches, status)
+                .filter { isValidForStatus(it, status) }
         }
     } catch (_: Exception) {
         emptyList()
@@ -180,7 +181,12 @@ class VerifiedCricketDataProvider(
             .get()
 
         document.select("a[href*='/live-cricket-scores/']")
+            // The page contains a global "MATCHES" strip before the actual
+            // Live/Recent/Upcoming section. Actual score entries contain the
+            // bullet-separated match metadata in their own link/container.
+            .filter { cleanText(it.text()).contains("•") }
             .mapNotNull { parseCricbuzzMatchLink(it, status) }
+            .filter { isValidForStatus(it, status) }
             .distinctBy { it.id }
             .filter { it.team1.id in top12Codes || it.team2.id in top12Codes }
     } catch (_: Exception) {
@@ -228,10 +234,11 @@ class VerifiedCricketDataProvider(
         val team2 = teams[code2] ?: return null
 
         val containerText = cleanText(
-            link.parent()?.parent()?.text()
-                .orEmpty()
-                .ifBlank { link.parent()?.text().orEmpty() }
-                .ifBlank { link.text() }
+            listOf(
+                link.text(),
+                link.parent()?.text().orEmpty(),
+                link.parent()?.parent()?.text().orEmpty()
+            ).joinToString(" ")
         )
         val combinedText = cleanText("$containerText $slug")
 
@@ -517,6 +524,65 @@ class VerifiedCricketDataProvider(
         )
     }
 
+    /**
+     * The upstream unofficial API has historically returned overlapping lists
+     * when its cache is stale. Never trust the endpoint name alone: validate
+     * the actual match text before putting it into a CRIXER tab.
+     */
+    private fun isValidForStatus(match: Match, expected: MatchStatus): Boolean {
+        val text = cleanText(
+            listOf(
+                match.title,
+                match.situationSummary,
+                match.resultSummary.orEmpty(),
+                match.scheduledDateText.orEmpty()
+            ).joinToString(" ")
+        ).lowercase(Locale.US)
+
+        val completedMarkers = listOf(
+            "won by", "match drawn", "drawn", "tie", "tied",
+            "no result", "abandoned", "retired hurt", "all out"
+        )
+        val upcomingMarkers = listOf(
+            "match starts", "starts at", "preview",
+            "tomorrow", "today", "scheduled"
+        )
+        val liveMarkers = listOf(
+            "day ", "session", "trail by", "lead by", "need ",
+            "opt to bat", "opt to bowl", "in progress", "live"
+        )
+
+        return when (expected) {
+            MatchStatus.LIVE -> {
+                completedMarkers.none { text.contains(it) } &&
+                    upcomingMarkers.none { text.contains(it) } &&
+                    (
+                        liveMarkers.any { text.contains(it) } ||
+                            match.innings1.runs > 0 ||
+                            (match.innings2?.runs ?: 0) > 0 ||
+                            match.innings1.overs > 0f ||
+                            (match.innings2?.overs ?: 0f) > 0f
+                    )
+            }
+
+            MatchStatus.COMPLETED -> {
+                completedMarkers.any { text.contains(it) } &&
+                    upcomingMarkers.none { text.contains(it) }
+            }
+
+            MatchStatus.UPCOMING -> {
+                completedMarkers.none { text.contains(it) } &&
+                    liveMarkers.none { text.contains(it) } &&
+                    (
+                        upcomingMarkers.any { text.contains(it) } ||
+                            !match.scheduledDateText.isNullOrBlank()
+                    )
+            }
+
+            else -> true
+        }
+    }
+
     private fun parseMatches(array: JSONArray, status: MatchStatus): List<Match> {
         val result = mutableListOf<Match>()
 
@@ -536,7 +602,9 @@ class VerifiedCricketDataProvider(
             }
         }
 
-        return result.distinctBy { it.id }
+        return result
+            .distinctBy { it.id }
+            .filter { isValidForStatus(it, status) }
     }
 
     private fun parseMatch(item: JSONObject, status: MatchStatus): Match? {
