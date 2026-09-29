@@ -199,7 +199,10 @@ class VerifiedCricketDataProvider : CricketDataProvider {
     }
 
     override suspend fun getLiveMatches(): List<Match> {
-        return listOf(indVsAusLiveMatch, engVsNzLiveMatch)
+        // Never surface hard-coded/demo scores as live data.
+        // Live matches must come from a real, time-aware cricket provider.
+        // Until that provider is connected, the correct state is an empty live list.
+        return emptyList()
     }
 
     override suspend fun getCompletedMatches(): List<Match> {
