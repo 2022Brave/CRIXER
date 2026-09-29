@@ -37,13 +37,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Subject
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsCricket
 import androidx.compose.material.icons.filled.Subject
-import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.SportsCricket
 import androidx.compose.material3.Icon
@@ -279,8 +279,8 @@ private fun CrixerBottomNavigation(
         BottomNavItem(
             modifier = Modifier.weight(0.9f),
             label = "India",
-            selectedIcon = Icons.Filled.Flag,
-            unselectedIcon = Icons.Outlined.Flag,
+            selectedIcon = Icons.Filled.Public,
+            unselectedIcon = Icons.Outlined.Public,
             isSelected = currentScreen == CrixerScreen.INDIA,
             onClick = { onNavigate(CrixerScreen.INDIA) }
         )
