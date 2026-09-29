@@ -63,7 +63,9 @@ import com.example.ui.theme.CrixerWhite
 @Composable
 fun HomeScreen(
     viewModel: CrixerViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    teamCodeFilter: String? = null,
+    sectionTitle: String? = null
 ) {
     val liveMatches by viewModel.liveMatches.collectAsState()
     val completedMatches by viewModel.completedMatches.collectAsState()
@@ -77,11 +79,14 @@ fun HomeScreen(
         HomeTab.LIVE -> liveMatches
         HomeTab.COMPLETED -> completedMatches
         HomeTab.UPCOMING -> upcomingMatches
-    }.filter {
-        searchQuery.isEmpty() ||
-            it.title.contains(searchQuery, ignoreCase = true) ||
-            it.team1.name.contains(searchQuery, ignoreCase = true) ||
-            it.team2.name.contains(searchQuery, ignoreCase = true)
+    }.filter { match ->
+        (teamCodeFilter == null ||
+            match.team1.id == teamCodeFilter ||
+            match.team2.id == teamCodeFilter) &&
+        (searchQuery.isEmpty() ||
+            match.title.contains(searchQuery, ignoreCase = true) ||
+            match.team1.name.contains(searchQuery, ignoreCase = true) ||
+            match.team2.name.contains(searchQuery, ignoreCase = true))
     }
 
     val isSimpleMode = userSettings.displayMode == AppDisplayMode.SIMPLE
@@ -93,6 +98,24 @@ fun HomeScreen(
             .padding(horizontal = 16.dp)
     ) {
         Spacer(modifier = Modifier.height(4.dp))
+
+        if (sectionTitle != null) {
+            Text(
+                text = sectionTitle,
+                color = CrixerWhite,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 1.4.sp,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "India men's international cricket",
+                color = CrixerTextSecondary,
+                fontSize = 13.sp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+        }
 
         // Top Header Bar with Official Liquid Glass Logo Mark
         Row(
