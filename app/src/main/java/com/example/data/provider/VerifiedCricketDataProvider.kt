@@ -182,12 +182,12 @@ class VerifiedCricketDataProvider(
         ) score1.runs + 1 else null
 
         val requiredRuns = Regex(
-            """need(?:s)?\\s+(\\d+)\\s+runs?""",
+            """need(?:s)?\s+(\d+)\s+runs?""",
             RegexOption.IGNORE_CASE
         ).find(overview)?.groupValues?.getOrNull(1)?.toIntOrNull()
 
         val remainingBalls = Regex(
-            """(\\d+)\\s+balls?""",
+            """(\d+)\s+balls?""",
             RegexOption.IGNORE_CASE
         ).find(overview)?.groupValues?.getOrNull(1)?.toIntOrNull()
 
@@ -230,9 +230,9 @@ class VerifiedCricketDataProvider(
         val clean = cleanText(value)
         if (clean.isBlank() || clean.equals("To bat", true)) return Score()
 
-        val score = Regex("""(\\d+)\\s*[-/]\\s*(\\d+)""").find(clean)
+        val score = Regex("""(\d+)\s*[-/]\s*(\d+)""").find(clean)
         val overs = Regex(
-            """\\((\\d+(?:\\.\\d+)?)\\s*Ovs?\\)""",
+            """\((\d+(?:\.\d+)?)\s*Ovs?\)""",
             RegexOption.IGNORE_CASE
         ).find(clean)?.groupValues?.getOrNull(1)?.toFloatOrNull() ?: 0f
 
@@ -291,8 +291,8 @@ class VerifiedCricketDataProvider(
 
     private fun cleanTitle(title: String, format: MatchFormat): String {
         val clean = title
-            .replace(Regex("""\\s*-\\s*LIVE.*$""", RegexOption.IGNORE_CASE), "")
-            .replace(Regex("""\\s*-\\s*CRICKET SCORE.*$""", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("""\s*-\s*LIVE.*$""", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("""\s*-\s*CRICKET SCORE.*$""", RegexOption.IGNORE_CASE), "")
             .trim()
 
         val parts = clean.split(",").map { it.trim() }.filter { it.isNotBlank() }
@@ -317,7 +317,7 @@ class VerifiedCricketDataProvider(
     private fun cleanText(value: String): String =
         value.replace("&nbsp;", " ")
             .replace(Regex("""<[^>]+>"""), "")
-            .replace(Regex("""\\s+"""), " ")
+            .replace(Regex("""\s+"""), " ")
             .trim()
 
     override suspend fun getMatchDetails(matchId: String): Match? =
