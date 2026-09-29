@@ -20,6 +20,7 @@ enum class CrixerScreen {
     SPLASH,
     HOME,
     MATCHES,
+    INDIA,
     MATCH_DETAIL,
     SETTINGS,
     LEAN_BACK,
