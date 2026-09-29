@@ -1,0 +1,6 @@
+{
+  "name": "Crixer",
+  "description": "Every Ball Counts. Simple when you just want the score. Immersive when you want to experience the match. Featuring Liquid Glass design and Cricket Glance.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

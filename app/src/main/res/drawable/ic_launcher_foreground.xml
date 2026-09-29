@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 1. Squircle Liquid Glass Outer Bevel Rim -->
+    <path
+        android:pathData="M32,18 C46,18 62,18 76,18 C86,18 90,22 90,32 C90,46 90,62 90,76 C90,86 86,90 76,90 C62,90 46,90 32,90 C22,90 18,86 18,76 C18,62 18,46 18,32 C18,22 22,18 32,18 Z"
+        android:strokeWidth="1.2">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:startX="18"
+                android:startY="18"
+                android:endX="90"
+                android:endY="90"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#CCFFFFFF" />
+                <item android:offset="0.25" android:color="#9938BDF8" />
+                <item android:offset="0.6" android:color="#20FFFFFF" />
+                <item android:offset="0.85" android:color="#8038BDF8" />
+                <item android:offset="1.0" android:color="#EEFFFFFF" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Liquid Glass Inner Corner Refraction Glows -->
+    <path
+        android:pathData="M24,24 L36,20 M20,34 L20,26 L28,20"
+        android:strokeWidth="1.5"
+        android:strokeColor="#AAFFFFFF"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M84,84 L72,88 M88,74 L88,82 L80,88"
+        android:strokeWidth="1.5"
+        android:strokeColor="#8038BDF8"
+        android:strokeLineCap="round" />
+
+    <!-- 2. Speed Streaks (Red & White Trails Erupting from inside C) -->
+    <path
+        android:pathData="M44,52 L68,44"
+        android:strokeWidth="2.2"
+        android:strokeColor="#B0EF4444"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M48,55 L70,49"
+        android:strokeWidth="2.8"
+        android:strokeColor="#EEFF6B6B"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M42,57 L68,55"
+        android:strokeWidth="2.0"
+        android:strokeColor="#80EF4444"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M50,60 L69,60"
+        android:strokeWidth="1.6"
+        android:strokeColor="#B0FF8787"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M47,54 L66,48"
+        android:strokeWidth="1.0"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round" />
+
+    <!-- 3. Sculpted Chrome/Glass "C" Body -->
+    <path
+        android:pathData="M78,33 C67,24 49,24 38,32 C26,41 24,63 36,74 C47,84 66,85 78,76 L70,68 C62,75 49,74 42,67 C33,58 35,45 43,38 C51,31 63,33 70,39 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="26"
+                android:startY="24"
+                android:endX="78"
+                android:endY="85"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#FFFFFF" />
+                <item android:offset="0.2" android:color="#CBD5E1" />
+                <item android:offset="0.45" android:color="#64748B" />
+                <item android:offset="0.7" android:color="#E2E8F0" />
+                <item android:offset="0.88" android:color="#93C5FD" />
+                <item android:offset="1.0" android:color="#334155" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Liquid Glass Specular Bevel on C Arch -->
+    <path
+        android:pathData="M77,34 C66,25 49,26 39,33 C28,42 27,62 38,72 C48,81 65,82 76,74"
+        android:strokeWidth="1.4"
+        android:strokeColor="#D0FFFFFF" />
+
+    <!-- Cyan/Blue atmospheric refraction highlight on lower arch of C -->
+    <path
+        android:pathData="M38,68 C45,77 58,78 69,72"
+        android:strokeWidth="1.8"
+        android:strokeColor="#9038BDF8" />
+
+    <!-- 4. Glowing Red Cricket Ball - Radial Glow -->
+    <path
+        android:pathData="M73,48m-11,0a11,11 0 1,0 22,0a11,11 0 1,0 -22,0">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="73"
+                android:startY="37"
+                android:endX="73"
+                android:endY="59"
+                android:type="radial"
+                android:gradientRadius="11">
+                <item android:offset="0.0" android:color="#80EF4444" />
+                <item android:offset="0.6" android:color="#30EF4444" />
+                <item android:offset="1.0" android:color="#00EF4444" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Cricket Ball Sphere -->
+    <path
+        android:pathData="M73,48m-8,0a8,8 0 1,0 16,0a8,8 0 1,0 -16,0">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="69"
+                android:startY="42"
+                android:endX="78"
+                android:endY="55"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#FF6B72" />
+                <item android:offset="0.35" android:color="#EF4444" />
+                <item android:offset="0.8" android:color="#B91C1C" />
+                <item android:offset="1.0" android:color="#7F1D1D" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Ball Specular Reflection Glint -->
+    <path
+        android:pathData="M70,44 Q72,42 75,44"
+        android:strokeWidth="1.2"
+        android:strokeColor="#E0FFFFFF"
+        android:strokeLineCap="round" />
+
+    <!-- Cricket Ball Double Seam (White Stitches Curved across the Sphere) -->
+    <path
+        android:pathData="M68,43 Q74,49 71,55"
+        android:strokeWidth="1.4"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M69.5,43.5 Q75.5,49.5 72.5,55.5"
+        android:strokeWidth="0.8"
+        android:strokeColor="#E2E8F0"
+        android:strokeLineCap="round" />
+    <!-- Individual stitch marks -->
+    <path
+        android:pathData="M67.5,44.5 L69.5,44.5 M68.5,47.5 L70.5,47.5 M69.5,50.5 L71.5,50.5 M69.8,53.5 L71.8,53.5"
+        android:strokeWidth="0.7"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round" />
+</vector>

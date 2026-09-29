@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.MyApplication" parent="android:Theme.DeviceDefault.NoActionBar">
+        <!-- Native startup launch window background matches CrixerBlack #05070A -->
+        <item name="android:windowBackground">@color/crixer_black</item>
+        <item name="android:statusBarColor">@color/crixer_black</item>
+        <item name="android:navigationBarColor">@color/crixer_black</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+</resources>

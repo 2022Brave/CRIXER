@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.MyApplication" parent="android:Theme.DeviceDefault.NoActionBar">
+        <!-- Native startup launch window background matches CrixerBlack #05070A -->
+        <item name="android:windowBackground">@color/crixer_black</item>
+        <item name="android:statusBarColor">@color/crixer_black</item>
+        <item name="android:navigationBarColor">@color/crixer_black</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+
+        <!-- Android 12+ SplashScreen API: Matches first frame of CRIXER Liquid Glass splash -->
+        <item name="android:windowSplashScreenBackground">@color/crixer_black</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/crixer_black</item>
+        <item name="android:windowSplashScreenAnimationDuration">0</item>
+    </style>
+</resources>
