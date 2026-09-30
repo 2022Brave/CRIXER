@@ -399,7 +399,7 @@ private fun ImmersiveScoreHeader(
             .padding(16.dp)
     ) {
         val inn1 = match.innings1
-        val inn2 = match.innings2 ?: match.innings1
+        val inn2 = match.innings2
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -506,7 +506,7 @@ private fun ImmersiveScoreHeader(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            inn2.batters.filter { it.isNotOut }.take(2).forEach { batter ->
+            (inn2?.batters ?: inn1.batters).filter { it.isNotOut }.take(2).forEach { batter ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
