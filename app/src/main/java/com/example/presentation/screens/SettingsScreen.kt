@@ -2,7 +2,8 @@ package com.example.presentation.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*\nimport androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -101,9 +102,9 @@ fun SettingsScreen(viewModel: CrixerViewModel, modifier: Modifier = Modifier) {
                 LiquidGlassSurface(Modifier.fillMaxWidth(), isInteractive = false) {
                     Column(Modifier.padding(14.dp)) {
                         SettingSwitchRow("Live Updates", "Receive ball-by-ball stream updates", userSettings.liveUpdatesEnabled, viewModel::toggleLiveUpdates)
-                        HorizontalDivider(Color(0xFF1E2838), 0.5.dp, Modifier.padding(vertical = 10.dp))
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color(0xFF1E2838), thickness = 0.5.dp)
                         SettingSwitchRow("Cricket Glance", "Minimal live score on the lock screen", userSettings.cricketGlanceEnabled, viewModel::toggleCricketGlance)
-                        HorizontalDivider(Color(0xFF1E2838), 0.5.dp, Modifier.padding(vertical = 10.dp))
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color(0xFF1E2838), thickness = 0.5.dp)
                         SettingSwitchRow("Haptic Feedback", "Vibrate on verified wickets and sixes", userSettings.hapticFeedback, viewModel::toggleHaptics)
                     }
                 }
@@ -114,9 +115,9 @@ fun SettingsScreen(viewModel: CrixerViewModel, modifier: Modifier = Modifier) {
                 LiquidGlassSurface(Modifier.fillMaxWidth(), isInteractive = false) {
                     Column(Modifier.padding(14.dp)) {
                         SettingSwitchRow("Key Match Events", "Wickets, innings breaks, close chase", userSettings.notifyMatchEvents, viewModel::toggleNotifyEvents)
-                        HorizontalDivider(Color(0xFF1E2838), 0.5.dp, Modifier.padding(vertical = 10.dp))
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color(0xFF1E2838), thickness = 0.5.dp)
                         SettingSwitchRow("Player Milestones", "50s, 100s, 5-wicket hauls, verified records", userSettings.notifyMilestones, viewModel::toggleNotifyMilestones)
-                        HorizontalDivider(Color(0xFF1E2838), 0.5.dp, Modifier.padding(vertical = 10.dp))
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color(0xFF1E2838), thickness = 0.5.dp)
                         SettingSwitchRow("Match Results", "Final match outcomes and summaries", userSettings.notifyResults, viewModel::toggleNotifyResults)
                     }
                 }
