@@ -1,44 +1,24 @@
 package com.example.presentation.screens
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.repository.AppDisplayMode
-import com.example.presentation.components.CrixerLiquidGlassSegmentedControl
-import com.example.presentation.components.CrixerOfficialLogo
-import com.example.presentation.components.LiquidGlassSegmentItem
-import com.example.presentation.components.LiquidGlassSurface
-import com.example.presentation.components.MatchCard
+import com.example.presentation.components.*
 import com.example.presentation.viewmodel.CrixerViewModel
 import com.example.presentation.viewmodel.HomeTab
-import com.example.ui.theme.CrixerBlack
 import com.example.ui.theme.CrixerRed
 import com.example.ui.theme.CrixerTextSecondary
 import com.example.ui.theme.CrixerTextTertiary
 import com.example.ui.theme.CrixerWhite
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 @Composable
 fun HomeScreen(
@@ -53,121 +33,123 @@ fun HomeScreen(
     val upcoming by viewModel.upcomingMatches.collectAsState()
     val tab by viewModel.homeTab.collectAsState()
     val settings by viewModel.userSettings.collectAsState()
-    val activeTab = fixedTab ?: tab
-    val matches = when (activeTab) {
-        HomeTab.LIVE -> live
-        HomeTab.COMPLETED -> completed
-        HomeTab.UPCOMING -> upcoming
-    }.filter { match ->
-        teamCodeFilter == null || match.team1.id == teamCodeFilter || match.team2.id == teamCodeFilter
-    }
-    val isPro = settings.displayMode == AppDisplayMode.IMMERSIVE
+    val isPro = settings.displayMode == AppDisplayMode.PRO
 
-    Box(
-        modifier.fillMaxSize().background(
-            Brush.verticalGradient(
-                if (isPro) listOf(Color(0xFF08111F), Color(0xFF05080D), CrixerBlack)
-                else listOf(CrixerBlack, CrixerBlack)
-            )
-        )
-    ) {
-        Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 16.dp)) {
+    fun filter(list: List<com.example.domain.model.Match>) = list.filter {
+        teamCodeFilter == null || it.team1.id == teamCodeFilter || it.team2.id == teamCodeFilter
+    }
+    val liveList = filter(live)
+    val completedList = filter(completed)
+    val upcomingList = filter(upcoming)
+    val activeTab = fixedTab ?: tab
+
+    LiquidGlassBackground(isSimpleMode = !isPro, modifier = modifier.fillMaxSize()) {
+        Column(
+            Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 16.dp)
+        ) {
             Spacer(Modifier.height(8.dp))
             Row(
                 Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                CrixerOfficialLogo(size = 50.dp, showWordmark = true, showTagline = false, animated = false)
-                ModePill(isPro, viewModel::toggleDisplayMode)
+                CrixerOfficialLogo(48.dp, showWordmark = true, showTagline = false, animated = false)
+                LiquidGlassSurface(
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+                    tintColor = if (isPro) Color(0xFF102033) else Color(0xFF11161E),
+                    onClick = viewModel::toggleDisplayMode
+                ) {
+                    Text(
+                        if (isPro) "PRO" else "LITE",
+                        color = if (isPro) Color(0xFF7DD3FC) else CrixerTextSecondary,
+                        fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp)
+                    )
+                }
             }
+
             Spacer(Modifier.height(18.dp))
+            Text(sectionTitle ?: "Cricket, right now.", color = CrixerWhite, fontSize = 27.sp, fontWeight = FontWeight.Black)
             Text(
-                text = sectionTitle ?: if (activeTab == HomeTab.LIVE) "Cricket, right now." else "Cricket, without the noise.",
-                color = CrixerWhite, fontSize = 26.sp, fontWeight = FontWeight.Black
-            )
-            Text(
-                text = if (sectionTitle != null) "India men's international cricket"
-                else LocalDate.now().format(DateTimeFormatter.ofPattern("EEE, d MMM")),
-                color = CrixerTextSecondary, fontSize = 12.sp,
-                modifier = Modifier.padding(top = 4.dp)
+                if (sectionTitle != null) "India men's international cricket" else "Score first. Context when you need it.",
+                color = CrixerTextSecondary, fontSize = 12.sp, modifier = Modifier.padding(top = 4.dp)
             )
             Spacer(Modifier.height(16.dp))
-            val tabs = listOf(
-                LiquidGlassSegmentItem(HomeTab.LIVE, "LIVE", accentColor = CrixerRed),
-                LiquidGlassSegmentItem(HomeTab.UPCOMING, "FIXTURES", accentColor = Color(0xFF38BDF8)),
-                LiquidGlassSegmentItem(HomeTab.COMPLETED, "RESULTS", accentColor = Color(0xFF64748B))
-            )
-            CrixerLiquidGlassSegmentedControl(
-                items = tabs, selectedKey = activeTab,
-                onItemSelected = { if (fixedTab == null) viewModel.setHomeTab(it) },
-                isSimpleMode = !isPro, modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(Modifier.height(14.dp))
-            if (matches.isEmpty()) {
-                EmptyState(
-                    title = when (activeTab) {
-                        HomeTab.LIVE -> "Nothing live"
-                        HomeTab.UPCOMING -> "No fixtures available"
-                        HomeTab.COMPLETED -> "No recent results"
-                    },
-                    body = "CRIXER will show verified cricket data here when a source is available."
+
+            if (fixedTab == null) {
+                CrixerLiquidGlassSegmentedControl(
+                    items = listOf(
+                        LiquidGlassSegmentItem(HomeTab.LIVE, "LIVE", liveList.isNotEmpty(), CrixerRed),
+                        LiquidGlassSegmentItem(HomeTab.UPCOMING, "FIXTURES", accentColor = Color(0xFF38BDF8)),
+                        LiquidGlassSegmentItem(HomeTab.COMPLETED, "RESULTS", accentColor = Color(0xFF64748B))
+                    ),
+                    selectedKey = activeTab,
+                    onItemSelected = viewModel::setHomeTab,
+                    isSimpleMode = !isPro,
+                    modifier = Modifier.fillMaxWidth()
                 )
-            } else {
-                LazyColumn(
-                    Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(if (isPro) 12.dp else 8.dp)
-                ) {
-                    item {
-                        SectionLabel(
-                            if (activeTab == HomeTab.LIVE)
-                                matches.size.toString() + " MATCH" + if (matches.size == 1) "" else "ES" + " LIVE"
-                            else if (activeTab == HomeTab.UPCOMING) "NEXT UP" else "LATEST RESULTS"
-                        )
+                Spacer(Modifier.height(16.dp))
+            }
+
+            LazyColumn(
+                Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (fixedTab != null || activeTab != HomeTab.LIVE) {
+                    val list = when (activeTab) {
+                        HomeTab.LIVE -> liveList
+                        HomeTab.UPCOMING -> upcomingList
+                        HomeTab.COMPLETED -> completedList
                     }
-                    items(matches, key = { it.id }) { match ->
+                    item { SectionLabel(if (activeTab == HomeTab.UPCOMING) "NEXT UP" else if (activeTab == HomeTab.COMPLETED) "RECENT RESULTS" else "LIVE NOW") }
+                    if (list.isEmpty()) item { EmptyState(activeTab) }
+                    else items(list, key = { it.id }) { match ->
                         MatchCard(match, settings.displayMode, onClick = { viewModel.onMatchClicked(match) })
                     }
-                    item { Spacer(Modifier.height(24.dp)) }
+                } else {
+                    item { SectionLabel(if (liveList.isEmpty()) "NO LIVE MATCHES" else "${liveList.size} LIVE ${if (liveList.size == 1) "MATCH" else "MATCHES"}") }
+                    if (liveList.isEmpty()) item { EmptyState(HomeTab.LIVE) }
+                    else items(liveList.take(3), key = { it.id }) { match ->
+                        MatchCard(match, settings.displayMode, featured = true, onClick = { viewModel.onMatchClicked(match) })
+                    }
+
+                    if (upcomingList.isNotEmpty()) {
+                        item { Spacer(Modifier.height(8.dp)); SectionLabel("NEXT UP") }
+                        items(upcomingList.take(3), key = { "up-${it.id}" }) { match ->
+                            MatchCard(match, settings.displayMode, onClick = { viewModel.onMatchClicked(match) })
+                        }
+                    }
+                    if (completedList.isNotEmpty()) {
+                        item { Spacer(Modifier.height(8.dp)); SectionLabel("RECENT RESULTS") }
+                        items(completedList.take(3), key = { "done-${it.id}" }) { match ->
+                            MatchCard(match, settings.displayMode, onClick = { viewModel.onMatchClicked(match) })
+                        }
+                    }
+                    item { Spacer(Modifier.height(28.dp)) }
                 }
             }
         }
     }
 }
 
-@Composable
-private fun ModePill(isPro: Boolean, onClick: () -> Unit) {
-    LiquidGlassSurface(
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
-        tintColor = if (isPro) Color(0xFF102033) else Color(0xFF11161E),
-        onClick = onClick
-    ) {
-        Text(
-            text = if (isPro) "PRO" else "LITE",
-            color = if (isPro) Color(0xFF7DD3FC) else CrixerTextSecondary,
-            fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp)
-        )
-    }
+@Composable private fun SectionLabel(text: String) {
+    Text(text, color = CrixerTextTertiary, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.3.sp,
+        modifier = Modifier.padding(start = 3.dp, bottom = 1.dp))
 }
 
-@Composable
-private fun SectionLabel(text: String) {
-    Text(
-        text, color = CrixerTextTertiary, fontSize = 10.sp, fontWeight = FontWeight.Bold,
-        letterSpacing = 1.3.sp, modifier = Modifier.padding(start = 3.dp, bottom = 2.dp)
-    )
-}
-
-@Composable
-private fun EmptyState(title: String, body: String) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        LiquidGlassSurface(Modifier.fillMaxWidth(), isInteractive = false) {
-            Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(title, color = CrixerWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(7.dp))
-                Text(body, color = CrixerTextSecondary, fontSize = 12.sp)
-            }
+@Composable private fun EmptyState(tab: HomeTab) {
+    LiquidGlassSurface(Modifier.fillMaxWidth(), isInteractive = false, tintColor = Color(0xFF0E141D)) {
+        Column(Modifier.padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                when (tab) {
+                    HomeTab.LIVE -> "Nothing live right now"
+                    HomeTab.UPCOMING -> "No upcoming fixtures"
+                    HomeTab.COMPLETED -> "No recent results"
+                },
+                color = CrixerWhite, fontSize = 17.sp, fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(6.dp))
+            Text("CRIXER will show verified cricket data when a source is available.", color = CrixerTextSecondary, fontSize = 12.sp)
         }
     }
 }
