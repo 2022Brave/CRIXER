@@ -142,7 +142,7 @@ private fun TeamBlock(
     featured: Boolean,
     status: MatchStatus
 ) {
-    Column(horizontalAlignment = alignment, modifier = Modifier.widthIn(min = 96.dp).weight(1f)) {
+    Column(horizontalAlignment = alignment, modifier = Modifier.width(120.dp)) {
         Text(team.emoji, fontSize = if (featured) 22.sp else 18.sp)
         Spacer(Modifier.height(3.dp))
         Text(team.shortName, color = CrixerWhite, fontSize = if (featured) 14.sp else 13.sp, fontWeight = FontWeight.Bold)
