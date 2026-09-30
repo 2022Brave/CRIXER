@@ -97,7 +97,7 @@ fun LiveMatchScreen(viewModel: CrixerViewModel, modifier: Modifier = Modifier) {
             items = tabs,
             selectedKey = tab,
             onItemSelected = viewModel::setMatchDetailTab,
-            isSimpleMode = settings.displayMode.name == "SIMPLE",
+            isSimpleMode = settings.displayMode.name == "LITE",
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(12.dp))
@@ -120,13 +120,13 @@ private fun ScoreHero(m: Match) {
     ) {
         Column(Modifier.fillMaxWidth().padding(18.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                TeamHero(m.team1.shortName, m.team1.flagEmoji, m.innings1.runs.toString() + "/" + m.innings1.wickets, m.innings1.overs.toString())
+                TeamHero(m.team1.shortName, m.team1.flagEmoji, m.innings1.runs.toString() + "/" + m.innings1.wickets, m.innings1.overs.takeIf { it > 0f }?.let { formatOvers(it) })
                 Text("VS", color = CrixerTextTertiary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 val second = m.innings2
                 TeamHero(
                     m.team2.shortName, m.team2.flagEmoji,
                     if (second != null) second.runs.toString() + "/" + second.wickets else "—",
-                    if (second != null) second.overs.toString() else ""
+                    if (second != null) second.overs.takeIf { it > 0f }?.let { formatOvers(it) } else null
                 )
             }
             Spacer(Modifier.height(12.dp))
@@ -138,13 +138,12 @@ private fun ScoreHero(m: Match) {
     }
 }
 
-@Composable
-private fun TeamHero(name: String, emoji: String, score: String, overs: String) {
+private fun formatOvers(overs: Float): String {\n    val whole = overs.toInt()\n    val balls = ((overs - whole) * 10f).toInt().coerceIn(0, 5)\n    return "$whole.$balls"\n}\n\n@Composable\nprivate fun TeamHero(name: String, emoji: String, score: String, overs: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(emoji, fontSize = 24.sp)
         Text(name, color = CrixerWhite, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         Text(score, color = CrixerWhite, fontSize = 25.sp, fontWeight = FontWeight.Black)
-        if (overs.isNotBlank()) Text("(" + overs + ")", color = CrixerTextTertiary, fontSize = 10.sp)
+        Text(overs?.let { "($it)" } ?: "Overs unavailable", color = CrixerTextTertiary, fontSize = 10.sp)
     }
 }
 
