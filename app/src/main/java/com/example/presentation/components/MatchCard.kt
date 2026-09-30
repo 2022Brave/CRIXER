@@ -108,7 +108,7 @@ private fun SimpleMatchCard(
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
                 )
-                val inn1 = if (match.currentInningsNumber == 2) match.innings2 ?: match.innings1 else match.innings1
+                val inn1 = match.innings1
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
                         text = "${inn1.runs}/${inn1.wickets}",
@@ -136,8 +136,8 @@ private fun SimpleMatchCard(
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
                 )
-                val inn2 = if (match.currentInningsNumber == 2) match.innings1 else match.innings2
-                if (inn2 != null && inn2.overs > 0) {
+                val inn2 = match.innings2
+                if (inn2 != null && (inn2.overs > 0f || inn2.runs > 0 || inn2.wickets > 0)) {
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
                             text = "${inn2.runs}/${inn2.wickets}",
@@ -156,7 +156,10 @@ private fun SimpleMatchCard(
                     }
                 } else {
                     Text(
-                        text = match.scheduledDateText ?: "Yet to bat",
+                        text = when (match.status) {
+                            MatchStatus.UPCOMING -> match.scheduledDateText ?: "Upcoming"
+                            else -> "Yet to bat"
+                        },
                         color = Color(0xFF717D8F),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium
@@ -271,7 +274,7 @@ private fun ImmersiveMatchCard(
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    val inn = if (match.currentInningsNumber == 2) match.innings2 ?: match.innings1 else match.innings1
+                    val inn = match.innings1
                     Text(
                         text = "${inn.runs}/${inn.wickets}",
                         color = CrixerWhite,
@@ -310,8 +313,8 @@ private fun ImmersiveMatchCard(
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    val inn2 = if (match.currentInningsNumber == 2) match.innings1 else match.innings2
-                    if (inn2 != null && inn2.overs > 0) {
+                    val inn2 = match.innings2
+                    if (inn2 != null && (inn2.overs > 0f || inn2.runs > 0 || inn2.wickets > 0)) {
                         Text(
                             text = "${inn2.runs}/${inn2.wickets}",
                             color = CrixerWhite,
@@ -325,7 +328,10 @@ private fun ImmersiveMatchCard(
                         )
                     } else {
                         Text(
-                            text = match.scheduledDateText ?: "Upcoming",
+                            text = when (match.status) {
+                                MatchStatus.UPCOMING -> match.scheduledDateText ?: "Upcoming"
+                                else -> "Yet to bat"
+                            },
                             color = CrixerTextSecondary,
                             fontSize = 13.sp
                         )
