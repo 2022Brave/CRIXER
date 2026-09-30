@@ -36,6 +36,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,12 +62,6 @@ import com.example.ui.theme.CrixerWhite
 
 import androidx.compose.foundation.layout.statusBarsPadding
 
-enum class GlanceVisualState {
-    DEFAULT_AOD,
-    MOMENT_SIX,
-    MOMENT_WICKET,
-    LOCK_SCREEN_PILL
-}
 
 @Composable
 fun CricketGlanceScreen(
@@ -73,7 +70,7 @@ fun CricketGlanceScreen(
 ) {
     val liveMatches by viewModel.liveMatches.collectAsState()
     val userSettings by viewModel.userSettings.collectAsState()
-    var glanceState by remember { mutableStateOf(GlanceVisualState.DEFAULT_AOD) }
+    val glanceState = remember { mutableStateOf(false) }
     var selectedMatchIndex by remember { mutableStateOf(0) }
 
     val currentMatch = if (liveMatches.isNotEmpty()) liveMatches[selectedMatchIndex % liveMatches.size] else null
@@ -114,41 +111,13 @@ fun CricketGlanceScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // State Simulator Tabs
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFF131924))
-                .padding(4.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            listOf(
-                GlanceVisualState.DEFAULT_AOD to "Default",
-                GlanceVisualState.MOMENT_SIX to "SIX! Event",
-                GlanceVisualState.MOMENT_WICKET to "Wicket!",
-                GlanceVisualState.LOCK_SCREEN_PILL to "Widget Pill"
-            ).forEach { (state, title) ->
-                val isSelected = glanceState == state
-                Box(
-                    modifier = Modifier
-                        .testTag("glance_tab_${title.lowercase()}")
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(if (isSelected) Color(0xFF273549) else Color.Transparent)
-                        .clickable { glanceState = state }
-                        .padding(horizontal = 8.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        text = title,
-                        color = if (isSelected) CrixerWhite else CrixerTextSecondary,
-                        fontSize = 11.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
+        Text(
+            text = "LIVE MATCH GLANCE",
+            color = CrixerTextTertiary,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.2.sp
+        )
 
         // Simulated Phone Device Frame (Always-On Display / Lock Screen)
         Box(
@@ -167,40 +136,24 @@ fun CricketGlanceScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    // Clock
+                    // Device time/date are local UI state, never match/demo data.
                     Text(
-                        text = "5:42",
+                        text = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm")),
                         color = Color(0xFFE2E8F0),
                         fontSize = 54.sp,
                         fontWeight = FontWeight.ExtraLight,
                         letterSpacing = 1.sp
                     )
                     Text(
-                        text = "Tue, 23 Sep",
+                        text = LocalDate.now().format(DateTimeFormatter.ofPattern("EEE, dd MMM")),
                         color = CrixerTextSecondary,
                         fontSize = 14.sp
                     )
 
                     Spacer(modifier = Modifier.height(28.dp))
 
-                    // Glance Display Content based on State
-                    when (glanceState) {
-                        GlanceVisualState.DEFAULT_AOD -> {
-                            DefaultAodContent(match = currentMatch)
-                        }
-                        GlanceVisualState.MOMENT_SIX -> {
-                            KeyMomentSixContent(match = currentMatch)
-                        }
-                        GlanceVisualState.MOMENT_WICKET -> {
-                            KeyMomentWicketContent(match = currentMatch)
-                        }
-                        GlanceVisualState.LOCK_SCREEN_PILL -> {
-                            LockScreenPillContent(
-                                match = currentMatch,
-                                onClick = { viewModel.navigateTo(CrixerScreen.MATCH_DETAIL) }
-                            )
-                        }
-                    }
+                    // Render only live data supplied by the selected match.
+                    DefaultAodContent(match = currentMatch)
 
                     Spacer(modifier = Modifier.height(24.dp))
 
@@ -295,109 +248,72 @@ fun CricketGlanceScreen(
 
 @Composable
 private fun DefaultAodContent(match: Match) {
-    val inn = match.innings2 ?: match.innings1
+    val currentInnings = if (match.currentInningsNumber == 2) {
+        match.innings2
+    } else {
+        match.innings1
+    }
+
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = "${match.team1.shortName} vs ${match.team2.shortName} · ${match.title}", color = CrixerTextSecondary, fontSize = 11.sp)
+        Text(
+            text = "${match.team1.shortName} vs ${match.team2.shortName}",
+            color = CrixerTextSecondary,
+            fontSize = 11.sp
+        )
         Spacer(modifier = Modifier.height(10.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = match.team1.flagEmoji, fontSize = 20.sp)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(text = match.team1.shortName, color = CrixerWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        }
-        Text(
-            text = "${inn.runs}/${inn.wickets}",
-            color = CrixerWhite,
-            fontSize = 38.sp,
-            fontWeight = FontWeight.Black
-        )
-        Text(text = "${inn.overs} OV", color = CrixerTextSecondary, fontSize = 13.sp)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = match.situationSummary,
-            color = Color(0xFFFFB612),
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium
-        )
-    }
-}
 
-@Composable
-private fun KeyMomentSixContent(match: Match) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth(0.92f)
-            .clip(RoundedCornerShape(18.dp))
-            .background(Color(0xFF071424))
-            .border(1.5.dp, CrixerSixGlow.copy(alpha = 0.8f), RoundedCornerShape(18.dp))
-            .padding(16.dp)
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(28.dp)
-                        .clip(CircleShape)
-                        .background(CrixerSixGlow),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = "6", color = Color.Black, fontSize = 14.sp, fontWeight = FontWeight.Black)
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Column {
-                    Text(text = "SIX!", color = CrixerSixGlow, fontSize = 15.sp, fontWeight = FontWeight.Black)
-                    Text(text = "Kohli over long-on", color = CrixerWhite, fontSize = 11.sp)
-                }
-            }
+        if (currentInnings != null) {
+            val battingTeam = if (currentInnings.battingTeamId == match.team1.id) match.team1 else match.team2
+            Text(
+                text = battingTeam.shortName,
+                color = CrixerWhite,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "${currentInnings.runs}/${currentInnings.wickets}",
+                color = CrixerWhite,
+                fontSize = 38.sp,
+                fontWeight = FontWeight.Black
+            )
+            Text(
+                text = "${currentInnings.overs} OV",
+                color = CrixerTextSecondary,
+                fontSize = 13.sp
+            )
+        } else {
+            Text(
+                text = "Live score unavailable",
+                color = CrixerTextSecondary,
+                fontSize = 13.sp
+            )
+        }
+
+        if (match.situationSummary.isNotBlank()) {
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "IND 193/4", color = CrixerWhite, fontSize = 24.sp, fontWeight = FontWeight.Black)
-            Text(text = "18.3 OV", color = CrixerTextSecondary, fontSize = 11.sp)
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(text = "Need 12 from 9", color = Color(0xFFFFB612), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = match.situationSummary,
+                color = Color(0xFFFFB612),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+
+        match.activeMoment?.let { moment ->
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = moment.title,
+                color = if (moment.isSix) CrixerSixGlow else CrixerRed,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
 
 @Composable
-private fun KeyMomentWicketContent(match: Match) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth(0.92f)
-            .clip(RoundedCornerShape(18.dp))
-            .background(Color(0xFF1E0E12))
-            .border(1.5.dp, CrixerRed.copy(alpha = 0.8f), RoundedCornerShape(18.dp))
-            .padding(16.dp)
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(28.dp)
-                        .clip(CircleShape)
-                        .background(CrixerRed),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = "W", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Black)
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Column {
-                    Text(text = "WICKET!", color = CrixerRed, fontSize = 15.sp, fontWeight = FontWeight.Black)
-                    Text(text = "SKY out. 31 (16)", color = CrixerWhite, fontSize = 11.sp)
-                }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "IND 193/5", color = CrixerWhite, fontSize = 24.sp, fontWeight = FontWeight.Black)
-            Text(text = "18.4 OV", color = CrixerTextSecondary, fontSize = 11.sp)
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(text = "Need 12 from 8", color = Color(0xFFFFB612), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-@Composable
-private fun LockScreenPillContent(
-    match: Match,
-    onClick: () -> Unit
-) {
+private fun LockScreenPillContent(match: Match, onClick: () -> Unit) {
+    val currentInnings = if (match.currentInningsNumber == 2) match.innings2 else match.innings1
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(24.dp))
@@ -406,12 +322,14 @@ private fun LockScreenPillContent(
             .clickable { onClick() }
             .padding(horizontal = 18.dp, vertical = 10.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = match.team1.flagEmoji, fontSize = 16.sp)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(text = "${match.team1.shortName} 193/5 (18.4)", color = CrixerWhite, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(text = "Need 12 from 8", color = Color(0xFFFFB612), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-        }
+        Text(
+            text = if (currentInnings != null) {
+                "${if (currentInnings.battingTeamId == match.team1.id) match.team1.shortName else match.team2.shortName} ${currentInnings.runs}/${currentInnings.wickets}"
+            } else "Live score unavailable",
+            color = CrixerWhite,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
+}
 }
