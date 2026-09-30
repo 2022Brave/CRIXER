@@ -88,10 +88,10 @@ fun LiveMatchScreen(viewModel: CrixerViewModel, modifier: Modifier = Modifier) {
         Spacer(Modifier.height(14.dp))
 
         val tabs = listOf(
-            LiquidGlassSegmentItem(MatchDetailTab.OVERVIEW, "OVERVIEW", CrixerWhite),
-            LiquidGlassSegmentItem(MatchDetailTab.COMMENTARY, "BALLS", CrixerRed),
-            LiquidGlassSegmentItem(MatchDetailTab.SCORECARD, "SCORECARD", Color(0xFF38BDF8)),
-            LiquidGlassSegmentItem(MatchDetailTab.STATS, "STATS", Color(0xFF94A3B8))
+            LiquidGlassSegmentItem(MatchDetailTab.OVERVIEW, "OVERVIEW", accentColor = CrixerWhite),
+            LiquidGlassSegmentItem(MatchDetailTab.COMMENTARY, "BALLS", accentColor = CrixerRed),
+            LiquidGlassSegmentItem(MatchDetailTab.SCORECARD, "SCORECARD", accentColor = Color(0xFF38BDF8)),
+            LiquidGlassSegmentItem(MatchDetailTab.STATS, "STATS", accentColor = Color(0xFF94A3B8))
         )
         CrixerLiquidGlassSegmentedControl(
             items = tabs,
