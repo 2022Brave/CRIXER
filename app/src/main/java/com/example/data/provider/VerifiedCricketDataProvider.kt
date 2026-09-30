@@ -121,7 +121,7 @@ class VerifiedCricketDataProvider(
         status: MatchStatus
     ): List<Match> = withContext(Dispatchers.IO) {
         ensureTop12Codes()
-        val apiMatches = fetchFromCricbuzzApi(endpoint, status)
+        val apiMatches = sanitizeMatches(fetchFromCricbuzzApi(endpoint, status), status)
         if (apiMatches.isNotEmpty()) return@withContext apiMatches
 
         val pageUrl = when (endpoint) {
@@ -129,7 +129,7 @@ class VerifiedCricketDataProvider(
             "upcoming" -> CRICBUZZ_UPCOMING_URL
             else -> CRICBUZZ_RECENT_URL
         }
-        val pageMatches = fetchFromCricbuzzPage(pageUrl, status)
+        val pageMatches = sanitizeMatches(fetchFromCricbuzzPage(pageUrl, status), status)
         if (pageMatches.isNotEmpty()) return@withContext pageMatches
 
         val cricinfoUrl = when (endpoint) {
@@ -137,7 +137,7 @@ class VerifiedCricketDataProvider(
             "upcoming" -> CRICINFO_UPCOMING_URL
             else -> CRICINFO_RECENT_URL
         }
-        fetchFromCricinfoPage(cricinfoUrl, status)
+        sanitizeMatches(fetchFromCricinfoPage(cricinfoUrl, status), status)
     }
 
     private fun fetchFromCricbuzzApi(
@@ -202,6 +202,10 @@ class VerifiedCricketDataProvider(
             .substringBefore("?")
             .substringBefore("#")
 
+        val rawLinkText = cleanText(link.text())
+        val rawParentText = cleanText(link.parent()?.text().orEmpty())
+        if (isNonSeniorTeamLabel("$slug $rawLinkText $rawParentText")) return null
+
         val slugTeams = Regex(
             """^([a-z]{2,6})-(?:vs|v)-([a-z]{2,6})(?:-|$)""",
             RegexOption.IGNORE_CASE
@@ -211,8 +215,6 @@ class VerifiedCricketDataProvider(
             append(link.text())
             append(" ")
             append(link.parent()?.text().orEmpty())
-            append(" ")
-            append(link.parent()?.parent()?.text().orEmpty())
             append(" ")
             append(slug.replace('-', ' '))
         }
@@ -236,8 +238,7 @@ class VerifiedCricketDataProvider(
         val containerText = cleanText(
             listOf(
                 link.text(),
-                link.parent()?.text().orEmpty(),
-                link.parent()?.parent()?.text().orEmpty()
+                link.parent()?.text().orEmpty()
             ).joinToString(" ")
         )
         val combinedText = cleanText("$containerText $slug")
@@ -260,7 +261,7 @@ class VerifiedCricketDataProvider(
 
         return Match(
             id = "cricbuzz-web-" + (href.ifBlank { slug }).hashCode(),
-            title = cleanTitle(link.text().ifBlank { slug.replace('-', ' ') }, format),
+            title = canonicalTitle(team1, team2, link.text().ifBlank { slug.replace('-', ' ') }, format),
             venue = extractVenue(containerText),
             format = format,
             status = status,
@@ -286,9 +287,9 @@ class VerifiedCricketDataProvider(
             requiredRunRate = null,
             currentRunRate = if (score2.overs > 0f) score2.runs / score2.overs
             else if (score1.overs > 0f) score1.runs / score1.overs else 0f,
-            situationSummary = containerText,
-            resultSummary = if (status == MatchStatus.COMPLETED) containerText else null,
-            scheduledDateText = if (status == MatchStatus.UPCOMING) containerText else null
+            situationSummary = extractSituationSummary(containerText, status),
+            resultSummary = extractResultSummary(containerText, status),
+            scheduledDateText = if (status == MatchStatus.UPCOMING) cleanSchedule(extractScheduleText(containerText)) else null
         )
     }
 
@@ -402,8 +403,14 @@ class VerifiedCricketDataProvider(
             RegexOption.IGNORE_CASE
         ).find(rawTitle) ?: return null
 
-        val code1 = resolveTeam(matchTeams.groupValues[1], rawTitle) ?: return null
-        val code2 = resolveTeam(matchTeams.groupValues[2], rawTitle, code1) ?: return null
+        val rawTeam1 = cleanText(matchTeams.groupValues[1])
+        val rawTeam2 = cleanText(matchTeams.groupValues[2])
+        if (isNonSeniorTeamLabel(rawTeam1) || isNonSeniorTeamLabel(rawTeam2) ||
+            isNonSeniorTeamLabel(rawTitle)
+        ) return null
+
+        val code1 = resolveTeamStrict(rawTeam1) ?: return null
+        val code2 = resolveTeamStrict(rawTeam2) ?: return null
         if (code1 == code2) return null
 
         val parentText = cleanText(link.parent()?.text().orEmpty())
@@ -417,7 +424,7 @@ class VerifiedCricketDataProvider(
 
         return Match(
             id = "cricinfo-web-" + link.attr("href").hashCode(),
-            title = cleanTitle(rawTitle, format),
+            title = canonicalTitle(teams[code1] ?: return null, teams[code2] ?: return null, rawTitle, format),
             venue = "",
             format = format,
             status = status,
@@ -431,9 +438,9 @@ class VerifiedCricketDataProvider(
             remainingBalls = null,
             requiredRunRate = null,
             currentRunRate = if (score2.overs > 0f) score2.runs / score2.overs else if (score1.overs > 0f) score1.runs / score1.overs else 0f,
-            situationSummary = parentText,
-            resultSummary = if (status == MatchStatus.COMPLETED) parentText.ifBlank { null } else null,
-            scheduledDateText = if (status == MatchStatus.UPCOMING) parentText.ifBlank { null } else null
+            situationSummary = extractSituationSummary(parentText, status),
+            resultSummary = extractResultSummary(parentText, status),
+            scheduledDateText = if (status == MatchStatus.UPCOMING) cleanSchedule(extractScheduleText(parentText)) else null
         )
     }
 
@@ -466,8 +473,10 @@ class VerifiedCricketDataProvider(
 
         if (candidates.size < 2) return null
 
-        val code1 = resolveTeam(candidates[0], rawTitle) ?: return null
-        val code2 = resolveTeam(candidates[1], rawTitle, code1) ?: return null
+        if (candidates.any(::isNonSeniorTeamLabel) || isNonSeniorTeamLabel(rawTitle)) return null
+
+        val code1 = resolveTeamStrict(candidates[0]) ?: return null
+        val code2 = resolveTeamStrict(candidates[1]) ?: return null
         if (code1 == code2) return null
 
         val team1 = teams[code1] ?: return null
@@ -518,9 +527,9 @@ class VerifiedCricketDataProvider(
             remainingBalls = null,
             requiredRunRate = null,
             currentRunRate = if (currentInnings == 2 && score2.overs > 0f) score2.runs / score2.overs else if (score1.overs > 0f) score1.runs / score1.overs else 0f,
-            situationSummary = overview,
-            resultSummary = if (status == MatchStatus.COMPLETED) overview.ifBlank { null } else null,
-            scheduledDateText = schedule
+            situationSummary = extractSituationSummary(overview, status),
+            resultSummary = extractResultSummary(overview, status),
+            scheduledDateText = if (status == MatchStatus.UPCOMING) cleanSchedule(schedule) else null
         )
     }
 
@@ -615,8 +624,14 @@ class VerifiedCricketDataProvider(
         val first = rawTeams.optJSONObject(0) ?: return null
         val second = rawTeams.optJSONObject(1) ?: return null
 
-        val code1 = resolveTeam(first.optString("team"), rawTitle) ?: return null
-        val code2 = resolveTeam(second.optString("team"), rawTitle, code1) ?: return null
+        val rawTeam1 = cleanText(first.optString("team"))
+        val rawTeam2 = cleanText(second.optString("team"))
+        if (isNonSeniorTeamLabel(rawTeam1) || isNonSeniorTeamLabel(rawTeam2) ||
+            isNonSeniorTeamLabel(rawTitle)
+        ) return null
+
+        val code1 = resolveTeamStrict(rawTeam1) ?: return null
+        val code2 = resolveTeamStrict(rawTeam2) ?: return null
         if (code1 == code2) return null
 
         val team1 = teams[code1] ?: return null
@@ -681,9 +696,9 @@ class VerifiedCricketDataProvider(
                 requiredRuns * 6f / remainingBalls
             } else null,
             currentRunRate = crr,
-            situationSummary = overview,
-            resultSummary = if (status == MatchStatus.COMPLETED) overview.ifBlank { null } else null,
-            scheduledDateText = if (status == MatchStatus.UPCOMING) schedule.ifBlank { null } else null
+            situationSummary = extractSituationSummary(overview, status),
+            resultSummary = extractResultSummary(overview, status),
+            scheduledDateText = if (status == MatchStatus.UPCOMING) cleanSchedule(schedule) else null
         )
     }
 
@@ -735,15 +750,43 @@ class VerifiedCricketDataProvider(
         title: String,
         exclude: String? = null
     ): String? {
-        val normalized = cleanText(raw).uppercase(Locale.US).replace("..", "")
-        val direct = aliases[normalized]
+        val direct = resolveTeamStrict(raw)
         if (direct != null && direct != exclude) return direct
 
-        val upperTitle = title.uppercase(Locale.US)
-        for ((alias, code) in aliases) {
-            if (code != exclude && upperTitle.contains(alias)) return code
-        }
-        return null
+        if (cleanText(raw).isNotBlank()) return null
+
+        val upperTitle = cleanText(title).uppercase(Locale.US)
+        return aliases.entries
+            .sortedByDescending { it.key.length }
+            .firstOrNull { (alias, code) ->
+                code != exclude &&
+                    !isNonSeniorTeamLabel(upperTitle) &&
+                    Regex("""\b\${Regex.escape(alias)}\b""").containsMatchIn(upperTitle)
+            }?.second
+    }
+
+    private fun resolveTeamStrict(raw: String): String? {
+        val normalized = cleanText(raw)
+            .uppercase(Locale.US)
+            .replace(Regex("""\s+"""), " ")
+            .trim()
+
+        if (normalized.isBlank() || isNonSeniorTeamLabel(normalized)) return null
+
+        return aliases[normalized]
+    }
+
+    private fun isNonSeniorTeamLabel(value: String): Boolean {
+        val text = cleanText(value).uppercase(Locale.US)
+        if (text.isBlank()) return false
+
+        return text.contains("WOMEN") ||
+            text.contains("UNDER-19") ||
+            text.contains("UNDER 19") ||
+            text.contains("U19") ||
+            text.contains("ACADEMY") ||
+            text.contains("EMERGING") ||
+            Regex("""(?:^|[\s_-])(A|XI|W)(?:$|[\s_-])""").containsMatchIn(text)
     }
 
     private fun inferFormat(title: String): MatchFormat {
@@ -757,9 +800,9 @@ class VerifiedCricketDataProvider(
     }
 
     private fun cleanTitle(title: String, format: MatchFormat): String {
-        val clean = title
-            .replace(Regex("""\s*-\s*LIVE.*$""", RegexOption.IGNORE_CASE), "")
-            .replace(Regex("""\s*-\s*CRICKET SCORE.*$""", RegexOption.IGNORE_CASE), "")
+        val clean = cleanText(title)
+            .replace(Regex("""\s*-\s*(LIVE|PREVIEW|CRICKET SCORE|SCORECARD|COMMENTARY).*$""", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("""\s*\|.*$"""), "")
             .trim()
 
         val parts = clean.split(",").map { it.trim() }.filter { it.isNotBlank() }
@@ -770,6 +813,124 @@ class VerifiedCricketDataProvider(
         } else {
             "International Match · " + formatLabel(format)
         }
+    }
+
+    private fun canonicalTitle(
+        team1: Team,
+        team2: Team,
+        sourceTitle: String,
+        format: MatchFormat
+    ): String {
+        val clean = cleanTitle(sourceTitle, format)
+        val competitionPart = clean
+            .substringAfter(" · ", "")
+            .trim()
+            .takeIf { it.isNotBlank() && !it.equals(formatLabel(format), true) }
+
+        return if (competitionPart != null &&
+            !competitionPart.contains("live score", true) &&
+            !competitionPart.contains("scorecard", true) &&
+            !competitionPart.contains("commentary", true)
+        ) {
+            "\${team1.name} vs \${team2.name} · $competitionPart"
+        } else {
+            "\${team1.name} vs \${team2.name} · \${formatLabel(format)}"
+        }
+    }
+
+    private fun extractSituationSummary(raw: String, status: MatchStatus): String {
+        val text = cleanText(raw)
+        if (text.isBlank()) return ""
+
+        return when (status) {
+            MatchStatus.LIVE -> {
+                val chase = Regex(
+                    """(?i)(?:need(?:s)?|require(?:s)?)\s+\d+\s+runs?(?:\s+(?:from|off)\s+\d+\s+balls?)?"""
+                ).find(text)?.value
+                val margin = Regex(
+                    """(?i)(?:trail(?:s)?|lead(?:s)?)\s+by\s+\d+(?:\s+runs?)?"""
+                ).find(text)?.value
+                val session = Regex(
+                    """(?i)day\s+\d+(?::\s*[^|,]+)?"""
+                ).find(text)?.value
+
+                chase ?: margin ?: session ?: ""
+            }
+            MatchStatus.COMPLETED -> extractResultSummary(text, status).orEmpty()
+            else -> ""
+        }
+    }
+
+    private fun extractResultSummary(raw: String, status: MatchStatus): String? {
+        if (status != MatchStatus.COMPLETED) return null
+        val text = cleanText(raw)
+        if (text.isBlank()) return null
+
+        val result = Regex(
+            """(?i)([A-Za-z][A-Za-z .'-]{1,40}\s+won\s+by\s+[^|,.]+(?:\s+(?:runs?|wickets?|innings?))?)"""
+        ).find(text)?.value
+        if (result != null) return result.trim()
+
+        val fallback = Regex(
+            """(?i)(match\s+(?:drawn|tied)|no\s+result(?:\s+due\s+to\s+rain)?|match\s+abandoned[^|,.]*)"""
+        ).find(text)?.value
+        return fallback?.trim()
+    }
+
+    private fun extractScheduleText(raw: String): String {
+        val text = cleanText(raw)
+        if (text.isBlank()) return ""
+
+        return Regex(
+            """(?i)(?:match\s+starts?\s+at|starts?\s+at)\s+[^|]+"""
+        ).find(text)?.value
+            ?: Regex("""(?i)(?:today|tomorrow|[A-Za-z]{3},?\s+[A-Za-z]+\s+\d{1,2})[^|]*""")
+                .find(text)?.value.orEmpty()
+    }
+
+    private fun cleanSchedule(value: String): String {
+        val text = cleanText(value)
+        if (text.isBlank()) return ""
+
+        return text
+            .replace(Regex("""(?i)\bmatch\s+starts?\s+at\s*"""), "")
+            .replace(Regex("""\s+"""), " ")
+            .trim()
+    }
+
+    private fun sanitizeMatches(matches: List<Match>, expectedStatus: MatchStatus): List<Match> {
+        val seen = mutableSetOf<String>()
+
+        return matches
+            .asSequence()
+            .filter { it.status == expectedStatus }
+            .filter { it.team1.id in top12Codes || it.team2.id in top12Codes }
+            .filter { !isNonSeniorTeamLabel("\${it.title} \${it.team1.name} \${it.team2.name}") }
+            .filter { isValidForStatus(it, expectedStatus) }
+            .map { match ->
+                match.copy(
+                    title = canonicalTitle(match.team1, match.team2, match.title, match.format),
+                    venue = cleanPlace(match.venue),
+                    situationSummary = extractSituationSummary(match.situationSummary, expectedStatus),
+                    resultSummary = extractResultSummary(
+                        match.resultSummary.orEmpty().ifBlank { match.situationSummary },
+                        expectedStatus
+                    ),
+                    scheduledDateText = if (expectedStatus == MatchStatus.UPCOMING) {
+                        cleanSchedule(match.scheduledDateText.orEmpty())
+                    } else null
+                )
+            }
+            .filter { match ->
+                val key = listOf(
+                    match.team1.id,
+                    match.team2.id,
+                    match.format.name,
+                    cleanText(match.title).lowercase(Locale.US)
+                ).joinToString("|")
+                seen.add(key)
+            }
+            .toList()
     }
 
     private fun formatLabel(format: MatchFormat) = when (format) {
