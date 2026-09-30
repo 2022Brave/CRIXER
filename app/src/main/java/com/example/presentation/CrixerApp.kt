@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -58,15 +59,11 @@ fun CrixerApp(viewModel: CrixerViewModel = viewModel()) {
                     screen != CrixerScreen.LEAN_BACK &&
                     !transition
                 if (showBar) {
-                    CrixerBottomBar(
-                        currentScreen = screen,
-                        onNavigate = viewModel::navigateTo,
-                        isPro = isPro
-                    )
+                    CrixerBottomBar(screen, viewModel::navigateTo, isPro)
                 }
             }
-        ) { padding ->
-            Box(Modifier.fillMaxSize().background(Color.Transparent).padding(padding)) {
+        ) { paddingValues ->
+            Box(Modifier.fillMaxSize().padding(paddingValues)) {
                 AnimatedContent(
                     targetState = screen,
                     transitionSpec = {
@@ -76,15 +73,12 @@ fun CrixerApp(viewModel: CrixerViewModel = viewModel()) {
                     label = "crixerScreen"
                 ) { destination ->
                     when (destination) {
-                        CrixerScreen.SPLASH -> SplashScreen(
-                            onSplashFinished = { viewModel.navigateTo(CrixerScreen.HOME) }
-                        )
+                        CrixerScreen.SPLASH -> SplashScreen { viewModel.navigateTo(CrixerScreen.HOME) }
                         CrixerScreen.HOME -> HomeScreen(viewModel)
                         CrixerScreen.LIVE -> HomeScreen(viewModel, fixedTab = HomeTab.LIVE)
                         CrixerScreen.MATCHES -> MatchesScreen(viewModel)
                         CrixerScreen.INDIA -> HomeScreen(
                             viewModel,
-                            modifier = Modifier.padding(padding),
                             teamCodeFilter = "IND",
                             sectionTitle = "INDIA"
                         )
@@ -94,7 +88,6 @@ fun CrixerApp(viewModel: CrixerViewModel = viewModel()) {
                         CrixerScreen.CRICKET_GLANCE -> CricketGlanceScreen(viewModel)
                     }
                 }
-
                 if (transition && selectedMatch != null) {
                     LiquidGlassTransition(
                         match = selectedMatch!!,
