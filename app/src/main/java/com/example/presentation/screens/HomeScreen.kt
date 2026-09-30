@@ -94,9 +94,9 @@ fun HomeScreen(
             )
             Spacer(Modifier.height(16.dp))
             val tabs = listOf(
-                LiquidGlassSegmentItem(HomeTab.LIVE, "LIVE", CrixerRed),
-                LiquidGlassSegmentItem(HomeTab.UPCOMING, "FIXTURES", Color(0xFF38BDF8)),
-                LiquidGlassSegmentItem(HomeTab.COMPLETED, "RESULTS", Color(0xFF64748B))
+                LiquidGlassSegmentItem(HomeTab.LIVE, "LIVE", accentColor = CrixerRed),
+                LiquidGlassSegmentItem(HomeTab.UPCOMING, "FIXTURES", accentColor = Color(0xFF38BDF8)),
+                LiquidGlassSegmentItem(HomeTab.COMPLETED, "RESULTS", accentColor = Color(0xFF64748B))
             )
             CrixerLiquidGlassSegmentedControl(
                 items = tabs, selectedKey = activeTab,
