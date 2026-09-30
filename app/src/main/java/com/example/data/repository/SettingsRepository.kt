@@ -5,12 +5,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 enum class AppDisplayMode {
-    SIMPLE,
-    IMMERSIVE
+    LITE,
+    PRO
 }
 
 data class UserSettings(
-    val displayMode: AppDisplayMode = AppDisplayMode.IMMERSIVE,
+    val displayMode: AppDisplayMode = AppDisplayMode.PRO,
     val liveUpdatesEnabled: Boolean = true,
     val cricketGlanceEnabled: Boolean = true,
     val notifyMatchEvents: Boolean = true,
