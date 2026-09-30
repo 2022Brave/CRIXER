@@ -138,92 +138,18 @@ private fun ScoreHero(m: Match) {
     }
 }
 
-private fun formatOvers(overs: Float): String {\n    val whole = overs.toInt()\n    val balls = ((overs - whole) * 10f).toInt().coerceIn(0, 5)\n    return "$whole.$balls"\n}\n\n@Composable\nprivate fun TeamHero(name: String, emoji: String, score: String, overs: String) {
+private fun formatOvers(overs: Float): String {
+    val whole = overs.toInt()
+    val balls = ((overs - whole) * 10f).toInt().coerceIn(0, 5)
+    return "$whole.$balls"
+}
+
+@Composable
+private fun TeamHero(name: String, emoji: String, score: String, overs: String?) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(emoji, fontSize = 24.sp)
         Text(name, color = CrixerWhite, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         Text(score, color = CrixerWhite, fontSize = 25.sp, fontWeight = FontWeight.Black)
         Text(overs?.let { "($it)" } ?: "Overs unavailable", color = CrixerTextTertiary, fontSize = 10.sp)
-    }
-}
-
-@Composable
-private fun Overview(m: Match) {
-    val current = if (m.currentInningsNumber == 2) m.innings2 else m.innings1
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        if (current != null && current.batters.isNotEmpty()) {
-            item { SectionTitle("CURRENT BATTERS") }
-            items(current.batters.take(2), key = { it.id }) { batter ->
-                DataRow(
-                    batter.name,
-                    batter.runs.toString() + " (" + batter.balls + ")",
-                    if (batter.isOnStrike) "ON STRIKE" else ""
-                )
-            }
-        }
-        if (current != null && current.bowlers.isNotEmpty()) {
-            item { SectionTitle("CURRENT BOWLER") }
-            items(current.bowlers.take(1), key = { it.id }) { bowler ->
-                DataRow(bowler.name, bowler.wickets.toString() + "/" + bowler.runsConceded, bowler.overs.toString() + " ov")
-            }
-        }
-        item { SectionTitle("THIS OVER") }
-        item { BallRail(balls = current?.balls ?: emptyList()) }
-    }
-}
-
-@Composable
-private fun BallByBall(m: Match) {
-    val current = if (m.currentInningsNumber == 2) m.innings2 else m.innings1
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        item { SectionTitle("BALL-BY-BALL") }
-        val balls = current?.balls.orEmpty().asReversed()
-        if (balls.isEmpty()) {
-            item { Text("Verified ball-by-ball data unavailable.", color = CrixerTextSecondary, fontSize = 12.sp) }
-        } else {
-            items(balls.take(30), key = { it.ballId }) { ball ->
-                LiquidGlassSurface(Modifier.fillMaxWidth(), isInteractive = false) {
-                    Row(Modifier.padding(13.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text(ball.overNumber.toString() + "." + ball.ballInOver, color = CrixerTextTertiary, fontSize = 11.sp)
-                        Text(ball.outcome.label, color = if (ball.isWicket) CrixerRed else CrixerWhite, fontWeight = FontWeight.Bold)
-                        Text(ball.commentary.ifBlank { "Verified delivery" }, color = CrixerTextSecondary, fontSize = 11.sp, maxLines = 2)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun MatchStats(m: Match) {
-    val current = if (m.currentInningsNumber == 2) m.innings2 else m.innings1
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        item { SectionTitle("MATCH STATE") }
-        item { DataRow("Current run rate", "%.2f".format(m.currentRunRate), "") }
-        m.requiredRunRate?.let { item { DataRow("Required run rate", "%.2f".format(it), "") } }
-        m.requiredRuns?.let { item { DataRow("Runs required", it.toString(), "") } }
-        m.remainingBalls?.let { item { DataRow("Balls remaining", it.toString(), "") } }
-        item { DataRow("Venue", m.venue.ifBlank { "Unavailable" }, "") }
-        item { DataRow("Format", m.format.name, "") }
-        if (current?.batters.isNullOrEmpty() && current?.bowlers.isNullOrEmpty()) {
-            item { Text("Advanced analytics are hidden until verified player/ball data is available.", color = CrixerTextSecondary, fontSize = 12.sp) }
-        }
-    }
-}
-
-@Composable
-private fun SectionTitle(text: String) {
-    Text(text, color = CrixerTextTertiary, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
-}
-@Composable
-private fun DataRow(label: String, value: String, meta: String) {
-    LiquidGlassSurface(Modifier.fillMaxWidth(), isInteractive = false) {
-        Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            Column {
-                Text(label, color = CrixerWhite, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                if (meta.isNotBlank()) Text(meta, color = CrixerTextTertiary, fontSize = 10.sp)
-            }
-            Text(value, color = CrixerWhite, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-        }
     }
 }
