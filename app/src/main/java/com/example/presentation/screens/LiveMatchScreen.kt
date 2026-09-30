@@ -336,7 +336,7 @@ private fun SimpleScoreHeader(match: Match) {
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "(${inn1.overs} OV)",
+                            text = "(${inn2.overs} OV)",
                             color = Color(0xFF64748B),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
@@ -427,7 +427,7 @@ private fun ImmersiveScoreHeader(
                         fontWeight = FontWeight.Black
                     )
                     Text(
-                        text = "(${inn2.overs} OV)",
+                        text = "(${inn1.overs} OV)",
                         color = CrixerTextSecondary,
                         fontSize = 12.sp
                     )
