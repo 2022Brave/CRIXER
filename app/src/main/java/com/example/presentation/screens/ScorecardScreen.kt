@@ -99,10 +99,11 @@ fun ScorecardScreen(
 ) {
     var selectedTeamId by remember { mutableStateOf(match.team1.id) }
 
+    // Stable ownership: team1 -> innings1, team2 -> innings2.
     val innings = if (selectedTeamId == match.team1.id) {
-        match.innings2 ?: match.innings1
-    } else {
         match.innings1
+    } else {
+        match.innings2 ?: match.innings1
     }
 
     val teamName = if (selectedTeamId == match.team1.id) match.team1.name else match.team2.name
@@ -648,26 +649,3 @@ private fun ScorecardExtrasTotalPod(
                 text = "$runs/$wickets ($overs)",
                 color = CrixerWhite,
                 fontSize = 18.sp,
-                fontWeight = FontWeight.Black
-            )
-        }
-    }
-}
-
-@Composable
-private fun BowlingRow(bowler: BowlerFigures, isSimpleMode: Boolean) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(if (isSimpleMode) Color(0xFF0C1018) else Color(0x400C131E))
-            .padding(horizontal = 12.dp, vertical = 9.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(text = bowler.name, color = CrixerWhite, fontSize = 13.sp, fontWeight = FontWeight.Normal, modifier = Modifier.weight(2.4f))
-        Text(text = "${bowler.overs}", color = CrixerWhite, fontSize = 12.sp, modifier = Modifier.weight(0.8f), textAlign = TextAlign.End)
-        Text(text = "${bowler.maidens}", color = CrixerTextSecondary, fontSize = 12.sp, modifier = Modifier.weight(0.7f), textAlign = TextAlign.End)
-        Text(text = "${bowler.runsConceded}", color = CrixerTextSecondary, fontSize = 12.sp, modifier = Modifier.weight(0.8f), textAlign = TextAlign.End)
-        Text(text = "${bowler.wickets}", color = Color(0xFFFFB612), fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(0.8f), textAlign = TextAlign.End)
-        Text(text = "${bowler.economy}", color = CrixerTextSecondary, fontSize = 12.sp, modifier = Modifier.weight(1.1f), textAlign = TextAlign.End)
-    }
-}
