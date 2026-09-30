@@ -761,7 +761,7 @@ class VerifiedCricketDataProvider(
             .firstOrNull { (alias, code) ->
                 code != exclude &&
                     !isNonSeniorTeamLabel(upperTitle) &&
-                    Regex("""\b\${Regex.escape(alias)}\b""").containsMatchIn(upperTitle)
+                    Regex("""\b${Regex.escape(alias)}\b""").containsMatchIn(upperTitle)
             }?.second
     }
 
@@ -832,9 +832,9 @@ class VerifiedCricketDataProvider(
             !competitionPart.contains("scorecard", true) &&
             !competitionPart.contains("commentary", true)
         ) {
-            "\${team1.name} vs \${team2.name} · $competitionPart"
+            "${team1.name} vs ${team2.name} · $competitionPart"
         } else {
-            "\${team1.name} vs \${team2.name} · \${formatLabel(format)}"
+            "${team1.name} vs ${team2.name} · ${formatLabel(format)}"
         }
     }
 
@@ -905,7 +905,7 @@ class VerifiedCricketDataProvider(
             .asSequence()
             .filter { it.status == expectedStatus }
             .filter { it.team1.id in top12Codes || it.team2.id in top12Codes }
-            .filter { !isNonSeniorTeamLabel("\${it.title} \${it.team1.name} \${it.team2.name}") }
+            .filter { !isNonSeniorTeamLabel("${it.title} ${it.team1.name} ${it.team2.name}") }
             .filter { isValidForStatus(it, expectedStatus) }
             .map { match ->
                 match.copy(
