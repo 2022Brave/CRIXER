@@ -79,46 +79,19 @@ fun BallRail(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Standard over has 6 slots: show current completed balls or fill placeholders
+            // Never manufacture deliveries. If verified ball-by-ball data is unavailable,
+            // show an explicit empty state instead of sample balls.
             val displayList = remember(balls) {
-                if (balls.size >= 6) balls.takeLast(6)
-                else {
-                    // Sample standard sequence from screenshot: [1, 2, W, ·, ·, 6]
-                    val sampleDefaults = listOf(
-                        BallOutcome.ONE to "1",
-                        BallOutcome.TWO to "2",
-                        BallOutcome.WICKET to "W",
-                        BallOutcome.DOT to "·",
-                        BallOutcome.DOT to "·",
-                        BallOutcome.SIX to "6"
-                    )
-                    sampleDefaults.mapIndexed { index, pair ->
-                        if (index < balls.size) balls[index]
-                        else BallState(
-                            ballId = "sample-$index",
-                            overNumber = 18,
-                            ballInOver = index + 1,
-                            bowlerName = "M. Starc",
-                            batsmanName = "V. Kohli",
-                            outcome = pair.first,
-                            runs = when (pair.first) {
-                                BallOutcome.SIX -> 6
-                                BallOutcome.FOUR -> 4
-                                BallOutcome.TWO -> 2
-                                BallOutcome.ONE -> 1
-                                else -> 0
-                            },
-                            isWicket = pair.first == BallOutcome.WICKET,
-                            isBoundarySix = pair.first == BallOutcome.SIX,
-                            speedKph = 143.2f + index * 0.5f,
-                            commentary = when (pair.first) {
-                                BallOutcome.SIX -> "SIX! Smacked over deep mid-wicket!"
-                                BallOutcome.WICKET -> "OUT! Caught by Marsh at mid-off!"
-                                else -> "Pushed into the offside for a run."
-                            }
-                        )
-                    }
-                }
+                balls.takeLast(6)
+            }
+
+            if (displayList.isEmpty()) {
+                Text(
+                    text = "Ball-by-ball data unavailable",
+                    color = CrixerTextSecondary,
+                    fontSize = 11.sp,
+                    modifier = Modifier.padding(top = 12.dp)
+                )
             }
 
             displayList.forEach { ball ->
