@@ -66,7 +66,7 @@ fun CrixerApp(viewModel: CrixerViewModel = viewModel()) {
                 }
             }
         ) { padding ->
-            Box(Modifier.fillMaxSize().background(Color.Transparent)) {
+            Box(Modifier.fillMaxSize().background(Color.Transparent).padding(padding)) {
                 AnimatedContent(
                     targetState = screen,
                     transitionSpec = {
@@ -79,8 +79,8 @@ fun CrixerApp(viewModel: CrixerViewModel = viewModel()) {
                         CrixerScreen.SPLASH -> SplashScreen(
                             onSplashFinished = { viewModel.navigateTo(CrixerScreen.HOME) }
                         )
-                        CrixerScreen.HOME -> HomeScreen(viewModel, modifier = Modifier.padding(padding))
-                        CrixerScreen.LIVE -> HomeScreen(viewModel, modifier = Modifier.padding(padding), fixedTab = HomeTab.LIVE)
+                        CrixerScreen.HOME -> HomeScreen(viewModel)
+                        CrixerScreen.LIVE -> HomeScreen(viewModel, fixedTab = HomeTab.LIVE)
                         CrixerScreen.MATCHES -> MatchesScreen(viewModel)
                         CrixerScreen.INDIA -> HomeScreen(
                             viewModel,
