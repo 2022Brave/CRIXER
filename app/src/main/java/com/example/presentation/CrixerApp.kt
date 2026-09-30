@@ -73,7 +73,7 @@ fun CrixerApp(viewModel: CrixerViewModel = viewModel()) {
                     label = "crixerScreen"
                 ) { destination ->
                     when (destination) {
-                        CrixerScreen.SPLASH -> SplashScreen { viewModel.navigateTo(CrixerScreen.HOME) }
+                        CrixerScreen.SPLASH -> SplashScreen(onSplashFinished = { viewModel.navigateTo(CrixerScreen.HOME) })
                         CrixerScreen.HOME -> HomeScreen(viewModel)
                         CrixerScreen.LIVE -> HomeScreen(viewModel, fixedTab = HomeTab.LIVE)
                         CrixerScreen.MATCHES -> MatchesScreen(viewModel)
