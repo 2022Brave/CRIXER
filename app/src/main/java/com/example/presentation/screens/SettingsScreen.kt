@@ -2,7 +2,7 @@ package com.example.presentation.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.*\nimport androidx.compose.ui.draw.clip
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -85,7 +85,7 @@ fun SettingsScreen(viewModel: CrixerViewModel, modifier: Modifier = Modifier) {
                             }
                         }
 
-                        HorizontalDivider(Color(0xFF1E2838), 0.5.dp, Modifier.padding(vertical = 10.dp))
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color(0xFF1E2838), thickness = 0.5.dp)
                         SettingSwitchRow(
                             "Reduced Motion",
                             "Minimizes fluid transitions and pulse",
@@ -142,7 +142,7 @@ fun SettingsScreen(viewModel: CrixerViewModel, modifier: Modifier = Modifier) {
 
             item {
                 Column(Modifier.fillMaxWidth().padding(vertical = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    CrixerOfficialLogo(64.dp, showWordmark = true, showTagline = true, animated = true)
+                    CrixerOfficialLogo(size = 64.dp, showWordmark = true, showTagline = true, animated = true)
                     Spacer(Modifier.height(10.dp))
                     Box(
                         Modifier.clip(RoundedCornerShape(12.dp))
