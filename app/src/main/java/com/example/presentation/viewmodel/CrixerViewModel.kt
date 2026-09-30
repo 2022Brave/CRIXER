@@ -5,9 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.repository.AppDisplayMode
 import com.example.data.repository.CricketRepository
 import com.example.data.repository.SettingsRepository
-import com.example.domain.model.BallOutcome
 import com.example.domain.model.Match
-import com.example.domain.model.MatchFormat
 import com.example.domain.model.PlayerProfile
 import com.example.presentation.components.LiquidGlassPulse
 import kotlinx.coroutines.delay
@@ -207,44 +205,6 @@ class CrixerViewModel(
     fun loadPlayerProfile(playerId: String) {
         viewModelScope.launch {
             _selectedPlayerProfile.value = repository.getPlayerProfile(playerId)
-        }
-    }
-
-    /**
-     * Interactive ball simulator to trigger authentic cricket events,
-     * Ball Rail updates, Match Moment context changes, and Liquid Glass pulse.
-     */
-    fun simulateDelivery(outcome: BallOutcome) {
-        val currentMatch = selectedMatch.value ?: return
-
-        when (outcome) {
-            BallOutcome.SIX -> {
-                repository.recordBallDelivery(currentMatch.id, outcome, runs = 6)
-                triggerPulse(LiquidGlassPulse.SIX)
-            }
-            BallOutcome.FOUR -> {
-                repository.recordBallDelivery(currentMatch.id, outcome, runs = 4)
-            }
-            BallOutcome.WICKET -> {
-                repository.recordBallDelivery(
-                    currentMatch.id,
-                    outcome,
-                    runs = 0,
-                    isWicket = true,
-                    wicketType = "c Marsh b Starc"
-                )
-                triggerPulse(LiquidGlassPulse.WICKET)
-            }
-            BallOutcome.TWO -> {
-                repository.recordBallDelivery(currentMatch.id, outcome, runs = 2)
-            }
-            BallOutcome.ONE -> {
-                repository.recordBallDelivery(currentMatch.id, outcome, runs = 1)
-            }
-            BallOutcome.DOT -> {
-                repository.recordBallDelivery(currentMatch.id, outcome, runs = 0)
-            }
-            else -> {}
         }
     }
 
