@@ -529,7 +529,7 @@ class VerifiedCricketDataProvider(
             currentRunRate = if (currentInnings == 2 && score2.overs > 0f) score2.runs / score2.overs else if (score1.overs > 0f) score1.runs / score1.overs else 0f,
             situationSummary = extractSituationSummary(overview, status),
             resultSummary = extractResultSummary(overview, status),
-            scheduledDateText = if (status == MatchStatus.UPCOMING) cleanSchedule(schedule) else null
+            scheduledDateText = if (status == MatchStatus.UPCOMING) cleanSchedule(schedule.orEmpty()) else null
         )
     }
 
@@ -762,7 +762,7 @@ class VerifiedCricketDataProvider(
                 code != exclude &&
                     !isNonSeniorTeamLabel(upperTitle) &&
                     Regex("""\b${Regex.escape(alias)}\b""").containsMatchIn(upperTitle)
-            }?.second
+            }?.value
     }
 
     private fun resolveTeamStrict(raw: String): String? {
