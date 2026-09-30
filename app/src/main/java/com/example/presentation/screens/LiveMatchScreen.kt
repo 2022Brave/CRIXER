@@ -336,7 +336,7 @@ private fun SimpleScoreHeader(match: Match) {
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "(${inn2.overs} OV)",
+                            text = "(${inn1.overs} OV)",
                             color = Color(0xFF64748B),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
@@ -406,7 +406,7 @@ private fun ImmersiveScoreHeader(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Team 1 (Chasing)
+            // Team 1 always owns innings1. Score ownership never swaps based on the current innings.
             Column(horizontalAlignment = Alignment.Start) {
                 Box(
                     modifier = Modifier
@@ -419,6 +419,40 @@ private fun ImmersiveScoreHeader(
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(text = match.team1.shortName, color = CrixerTextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                if (inn1.runs > 0 || inn1.wickets > 0 || inn1.overs > 0f) {
+                    Text(
+                        text = "${inn1.runs}/${inn1.wickets}",
+                        color = CrixerWhite,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                    Text(
+                        text = "(${inn2.overs} OV)",
+                        color = CrixerTextSecondary,
+                        fontSize = 12.sp
+                    )
+                } else {
+                    Text(
+                        text = if (match.status == MatchStatus.UPCOMING) match.scheduledDateText ?: "Upcoming" else "Yet to bat",
+                        color = CrixerTextSecondary,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+
+            // Team 2 always owns innings2.
+            Column(horizontalAlignment = Alignment.End) {
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF1E293B)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = match.team2.flagEmoji, fontSize = 18.sp)
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = match.team2.shortName, color = CrixerTextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 if (inn2 != null && (inn2.runs > 0 || inn2.wickets > 0 || inn2.overs > 0f)) {
                     Text(
                         text = "${inn2.runs}/${inn2.wickets}",
@@ -438,32 +472,6 @@ private fun ImmersiveScoreHeader(
                         fontSize = 13.sp
                     )
                 }
-            }
-
-            // Team 2 (First Innings)
-            Column(horizontalAlignment = Alignment.End) {
-                Box(
-                    modifier = Modifier
-                        .size(34.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF1E293B)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = match.team2.flagEmoji, fontSize = 18.sp)
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(text = match.team2.shortName, color = CrixerTextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                Text(
-                    text = "${inn1.runs}/${inn1.wickets}",
-                    color = CrixerWhite,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Black
-                )
-                Text(
-                    text = "(${inn1.overs} OV)",
-                    color = CrixerTextSecondary,
-                    fontSize = 12.sp
-                )
             }
         }
 
@@ -553,7 +561,7 @@ private fun OverviewTabContent(
     match: Match,
     viewModel: CrixerViewModel
 ) {
-    val inn2 = match.innings2 ?: match.innings1
+    val inn2 = if (match.currentInningsNumber == 2) match.innings2 else match.innings1
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
