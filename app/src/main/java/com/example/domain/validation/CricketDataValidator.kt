@@ -27,6 +27,15 @@ object CricketDataValidator {
             discrepancies.addAll(inningsErrors)
         }
 
+        // A score without any verified ball/player detail is not enough to
+        // call the match fully verified. UI must not invent the missing layer.
+        if (match.status != com.example.domain.model.MatchStatus.UPCOMING &&
+            match.innings1.runs == 0 && match.innings1.overs == 0f &&
+            (match.innings2 == null || (match.innings2.runs == 0 && match.innings2.overs == 0f))
+        ) {
+            discrepancies.add("No verified score data received")
+        }
+
         // Validate target and required runs if chasing in 2nd innings
         if (match.currentInningsNumber == 2 && match.innings2 != null) {
             val target = match.innings1.runs + 1
