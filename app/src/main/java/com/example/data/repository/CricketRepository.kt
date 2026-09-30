@@ -35,10 +35,10 @@ class CricketRepository(
     val validationState: StateFlow<Map<String, MatchValidationResult>> = _validationState.asStateFlow()
 
     // Following entities state
-    private val _followedTeams = MutableStateFlow<Set<String>>(setOf("IND", "AUS"))
+    private val _followedTeams = MutableStateFlow<Set<String>>(emptySet())
     val followedTeams: StateFlow<Set<String>> = _followedTeams.asStateFlow()
 
-    private val _followedPlayers = MutableStateFlow<Set<String>>(setOf("ind-3", "ind-1", "aus-1")) // Kohli, Rohit, Travis Head
+    private val _followedPlayers = MutableStateFlow<Set<String>>(emptySet())
     val followedPlayers: StateFlow<Set<String>> = _followedPlayers.asStateFlow()
 
     suspend fun refreshData() {
