@@ -1,11 +1,6 @@
 package com.example.presentation.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,281 +10,163 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.presentation.components.CrixerLiquidGlassSegmentedControl
-import com.example.presentation.components.LiquidGlassSegmentItem
-import com.example.presentation.components.SegmentDensity
 import com.example.data.repository.AppDisplayMode
+import com.example.presentation.components.CrixerLiquidGlassSegmentedControl
 import com.example.presentation.components.CrixerOfficialLogo
+import com.example.presentation.components.LiquidGlassSegmentItem
+import com.example.presentation.components.LiquidGlassSurface
 import com.example.presentation.components.MatchCard
-import com.example.presentation.viewmodel.CrixerScreen
 import com.example.presentation.viewmodel.CrixerViewModel
 import com.example.presentation.viewmodel.HomeTab
 import com.example.ui.theme.CrixerBlack
 import com.example.ui.theme.CrixerRed
 import com.example.ui.theme.CrixerTextSecondary
+import com.example.ui.theme.CrixerTextTertiary
 import com.example.ui.theme.CrixerWhite
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun HomeScreen(
     viewModel: CrixerViewModel,
     modifier: Modifier = Modifier,
     teamCodeFilter: String? = null,
-    sectionTitle: String? = null
+    sectionTitle: String? = null,
+    fixedTab: HomeTab? = null
 ) {
-    val liveMatches by viewModel.liveMatches.collectAsState()
-    val completedMatches by viewModel.completedMatches.collectAsState()
-    val upcomingMatches by viewModel.upcomingMatches.collectAsState()
-    val homeTab by viewModel.homeTab.collectAsState()
-    val userSettings by viewModel.userSettings.collectAsState()
-    val isSearchActive by viewModel.isSearchActive.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
-
-    val currentMatches = when (homeTab) {
-        HomeTab.LIVE -> liveMatches
-        HomeTab.COMPLETED -> completedMatches
-        HomeTab.UPCOMING -> upcomingMatches
+    val live by viewModel.liveMatches.collectAsState()
+    val completed by viewModel.completedMatches.collectAsState()
+    val upcoming by viewModel.upcomingMatches.collectAsState()
+    val tab by viewModel.homeTab.collectAsState()
+    val settings by viewModel.userSettings.collectAsState()
+    val activeTab = fixedTab ?: tab
+    val matches = when (activeTab) {
+        HomeTab.LIVE -> live
+        HomeTab.COMPLETED -> completed
+        HomeTab.UPCOMING -> upcoming
     }.filter { match ->
-        (teamCodeFilter == null ||
-            match.team1.id == teamCodeFilter ||
-            match.team2.id == teamCodeFilter) &&
-        (searchQuery.isEmpty() ||
-            match.title.contains(searchQuery, ignoreCase = true) ||
-            match.team1.name.contains(searchQuery, ignoreCase = true) ||
-            match.team2.name.contains(searchQuery, ignoreCase = true))
+        teamCodeFilter == null || match.team1.id == teamCodeFilter || match.team2.id == teamCodeFilter
     }
+    val isPro = settings.displayMode == AppDisplayMode.IMMERSIVE
 
-    val isSimpleMode = userSettings.displayMode == AppDisplayMode.SIMPLE
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .padding(horizontal = 16.dp)
+    Box(
+        modifier.fillMaxSize().background(
+            Brush.verticalGradient(
+                if (isPro) listOf(Color(0xFF08111F), Color(0xFF05080D), CrixerBlack)
+                else listOf(CrixerBlack, CrixerBlack)
+            )
+        )
     ) {
-        Spacer(modifier = Modifier.height(4.dp))
-
-        if (sectionTitle != null) {
+        Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 16.dp)) {
+            Spacer(Modifier.height(8.dp))
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                CrixerOfficialLogo(size = 50.dp, showWordmark = true, showTagline = false, animated = false)
+                ModePill(isPro, viewModel::toggleDisplayMode)
+            }
+            Spacer(Modifier.height(18.dp))
             Text(
-                text = sectionTitle,
-                color = CrixerWhite,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 1.4.sp,
+                text = sectionTitle ?: if (activeTab == HomeTab.LIVE) "Cricket, right now." else "Cricket, without the noise.",
+                color = CrixerWhite, fontSize = 26.sp, fontWeight = FontWeight.Black
+            )
+            Text(
+                text = if (sectionTitle != null) "India men's international cricket"
+                else LocalDate.now().format(DateTimeFormatter.ofPattern("EEE, d MMM")),
+                color = CrixerTextSecondary, fontSize = 12.sp,
                 modifier = Modifier.padding(top = 4.dp)
             )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = "India men's international cricket",
-                color = CrixerTextSecondary,
-                fontSize = 13.sp
+            Spacer(Modifier.height(16.dp))
+            val tabs = listOf(
+                LiquidGlassSegmentItem(HomeTab.LIVE, "LIVE", CrixerRed),
+                LiquidGlassSegmentItem(HomeTab.UPCOMING, "FIXTURES", Color(0xFF38BDF8)),
+                LiquidGlassSegmentItem(HomeTab.COMPLETED, "RESULTS", Color(0xFF64748B))
             )
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-
-        // Top Header Bar with Official Liquid Glass Logo Mark
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.clickable { viewModel.navigateTo(CrixerScreen.SPLASH) }
-            ) {
-                // Official Crixer Mark
-                CrixerOfficialLogo(
-                    size = 32.dp,
-                    showWordmark = false,
-                    showTagline = false,
-                    animated = !isSimpleMode
+            CrixerLiquidGlassSegmentedControl(
+                items = tabs, selectedKey = activeTab,
+                onItemSelected = { if (fixedTab == null) viewModel.setHomeTab(it) },
+                isSimpleMode = !isPro, modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(14.dp))
+            if (matches.isEmpty()) {
+                EmptyState(
+                    title = when (activeTab) {
+                        HomeTab.LIVE -> "Nothing live"
+                        HomeTab.UPCOMING -> "No fixtures available"
+                        HomeTab.COMPLETED -> "No recent results"
+                    },
+                    body = "CRIXER will show verified cricket data here when a source is available."
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "CRI",
-                        color = CrixerWhite,
-                        fontSize = 19.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 1.8.sp,
-                        fontFamily = FontFamily.SansSerif
-                    )
-                    Text(
-                        text = "X",
-                        color = CrixerRed,
-                        fontSize = 19.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 1.8.sp,
-                        fontFamily = FontFamily.SansSerif
-                    )
-                    Text(
-                        text = "ER",
-                        color = CrixerWhite,
-                        fontSize = 19.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 1.8.sp,
-                        fontFamily = FontFamily.SansSerif
-                    )
-                }
-            }
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(
-                    onClick = { viewModel.toggleSearch() },
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF131A26))
-                        .testTag("search_button")
+            } else {
+                LazyColumn(
+                    Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(if (isPro) 12.dp else 8.dp)
                 ) {
-                    Icon(
-                        imageVector = if (isSearchActive) Icons.Default.Close else Icons.Outlined.Search,
-                        contentDescription = "Search",
-                        tint = CrixerWhite,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                IconButton(
-                    onClick = { viewModel.navigateTo(CrixerScreen.SETTINGS) },
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF131A26))
-                        .testTag("settings_button")
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Settings,
-                        contentDescription = "Settings",
-                        tint = CrixerWhite,
-                        modifier = Modifier.size(18.dp)
-                    )
+                    item {
+                        SectionLabel(
+                            if (activeTab == HomeTab.LIVE)
+                                matches.size.toString() + " MATCH" + if (matches.size == 1) "" else "ES" + " LIVE"
+                            else if (activeTab == HomeTab.UPCOMING) "NEXT UP" else "LATEST RESULTS"
+                        )
+                    }
+                    items(matches, key = { it.id }) { match ->
+                        MatchCard(match, settings.displayMode, onClick = { viewModel.onMatchClicked(match) })
+                    }
+                    item { Spacer(Modifier.height(24.dp)) }
                 }
             }
         }
+    }
+}
 
-        // Search Bar (if active)
-        AnimatedVisibility(visible = isSearchActive) {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { viewModel.setSearchQuery(it) },
-                placeholder = { Text("Search teams, venues, tournaments...", color = CrixerTextSecondary, fontSize = 13.sp) },
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = CrixerRed,
-                    unfocusedBorderColor = Color(0xFF334155),
-                    focusedTextColor = CrixerWhite,
-                    unfocusedTextColor = CrixerWhite,
-                    cursorColor = CrixerRed
-                ),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Unified Pill-shaped Liquid Glass Segmented Control: LIVE | COMPLETED | UPCOMING
-        val homeTabItems = remember {
-            listOf(
-                LiquidGlassSegmentItem(
-                    key = HomeTab.LIVE,
-                    label = "Live",
-                    isLiveDot = true,
-                    accentColor = Color(0xFFFF4D4D),
-                    testTag = "home_tab_live"
-                ),
-                LiquidGlassSegmentItem(
-                    key = HomeTab.COMPLETED,
-                    label = "Completed",
-                    isLiveDot = false,
-                    accentColor = Color(0xFF64748B),
-                    testTag = "home_tab_completed"
-                ),
-                LiquidGlassSegmentItem(
-                    key = HomeTab.UPCOMING,
-                    label = "Upcoming",
-                    isLiveDot = false,
-                    accentColor = Color(0xFF38BDF8),
-                    testTag = "home_tab_upcoming"
-                )
-            )
-        }
-
-        CrixerLiquidGlassSegmentedControl(
-            items = homeTabItems,
-            selectedKey = homeTab,
-            onItemSelected = { viewModel.setHomeTab(it) },
-            isSimpleMode = isSimpleMode,
-            density = SegmentDensity.REGULAR,
-            modifier = Modifier.fillMaxWidth()
+@Composable
+private fun ModePill(isPro: Boolean, onClick: () -> Unit) {
+    LiquidGlassSurface(
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+        tintColor = if (isPro) Color(0xFF102033) else Color(0xFF11161E),
+        onClick = onClick
+    ) {
+        Text(
+            text = if (isPro) "PRO" else "LITE",
+            color = if (isPro) Color(0xFF7DD3FC) else CrixerTextSecondary,
+            fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp)
         )
+    }
+}
 
-        Spacer(modifier = Modifier.height(14.dp))
+@Composable
+private fun SectionLabel(text: String) {
+    Text(
+        text, color = CrixerTextTertiary, fontSize = 10.sp, fontWeight = FontWeight.Bold,
+        letterSpacing = 1.3.sp, modifier = Modifier.padding(start = 3.dp, bottom = 2.dp)
+    )
+}
 
-        // Matches list
-        if (currentMatches.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = if (searchQuery.isNotEmpty()) "No matches found for '$searchQuery'" else "No matches in this category",
-                    color = CrixerTextSecondary,
-                    fontSize = 14.sp
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = if (isSimpleMode) Arrangement.spacedBy(2.dp) else Arrangement.spacedBy(12.dp)
-            ) {
-                items(currentMatches, key = { it.id }) { match ->
-                    MatchCard(
-                        match = match,
-                        displayMode = userSettings.displayMode,
-                        onClick = { viewModel.onMatchClicked(match) }
-                    )
-                }
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
+@Composable
+private fun EmptyState(title: String, body: String) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        LiquidGlassSurface(Modifier.fillMaxWidth(), isInteractive = false) {
+            Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(title, color = CrixerWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(7.dp))
+                Text(body, color = CrixerTextSecondary, fontSize = 12.sp)
             }
         }
     }

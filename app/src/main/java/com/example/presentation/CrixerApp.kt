@@ -2,46 +2,31 @@ package com.example.presentation
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Subject
-import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsCricket
-import androidx.compose.material.icons.filled.Subject
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Settings
@@ -52,31 +37,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.math.abs
+import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.data.repository.AppDisplayMode
-import com.example.presentation.components.CrixerLiquidGlassSegmentedControl
-import com.example.presentation.components.LiquidGlassSegmentItem
 import com.example.presentation.components.LiquidGlassTransition
-import com.example.presentation.components.SegmentDensity
 import com.example.presentation.screens.CricketGlanceScreen
 import com.example.presentation.screens.HomeScreen
 import com.example.presentation.screens.LeanBackScreen
@@ -86,133 +56,73 @@ import com.example.presentation.screens.SettingsScreen
 import com.example.presentation.screens.SplashScreen
 import com.example.presentation.viewmodel.CrixerScreen
 import com.example.presentation.viewmodel.CrixerViewModel
+import com.example.presentation.viewmodel.HomeTab
 import com.example.ui.theme.CrixerBlack
-import com.example.ui.theme.CrixerRed
 import com.example.ui.theme.CrixerTextSecondary
 import com.example.ui.theme.CrixerWhite
 
 @Composable
-fun CrixerApp(
-    viewModel: CrixerViewModel = viewModel()
-) {
-    val currentScreen by viewModel.currentScreen.collectAsState()
-    val isShowingTransition by viewModel.isShowingTransition.collectAsState()
-    val isRepeatVisit by viewModel.isRepeatVisit.collectAsState()
+fun CrixerApp(viewModel: CrixerViewModel = viewModel()) {
+    val screen by viewModel.currentScreen.collectAsState()
+    val transition by viewModel.isShowingTransition.collectAsState()
     val selectedMatch by viewModel.selectedMatch.collectAsState()
-    val userSettings by viewModel.userSettings.collectAsState()
+    val settings by viewModel.userSettings.collectAsState()
+    val repeatVisit by viewModel.isRepeatVisit.collectAsState()
 
-    val isSimpleMode = userSettings.displayMode == AppDisplayMode.SIMPLE
-
-    // Background color animation between Simple (pure obsidian) and Immersive (liquid atmosphere)
-    val immersiveAtmosphereAlpha by animateFloatAsState(
-        targetValue = if (isSimpleMode) 0f else 1f,
-        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
-        label = "atmosphereAlpha"
-    )
-
-    // Back handling
-    BackHandler(enabled = currentScreen != CrixerScreen.HOME && currentScreen != CrixerScreen.SPLASH) {
-        when (currentScreen) {
+    BackHandler(enabled = screen != CrixerScreen.HOME && screen != CrixerScreen.SPLASH) {
+        when (screen) {
+            CrixerScreen.MATCH_DETAIL -> viewModel.navigateTo(CrixerScreen.MATCHES)
             CrixerScreen.LEAN_BACK -> viewModel.navigateTo(CrixerScreen.MATCH_DETAIL)
-            CrixerScreen.MATCH_DETAIL -> viewModel.navigateTo(CrixerScreen.HOME)
             else -> viewModel.navigateTo(CrixerScreen.HOME)
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(CrixerBlack)
-    ) {
-        // Continuous Atmospheric Surface extending right behind the Status Bar
-        if (immersiveAtmosphereAlpha > 0f) {
+    Box(Modifier.fillMaxSize().background(CrixerBlack)) {
+        if (settings.displayMode.name == "IMMERSIVE") {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .alpha(immersiveAtmosphereAlpha)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0xFF0F1E36), // Deep stadium ambient blue
-                                Color(0xFF091220),
-                                Color(0xFF05070A)
-                            ),
-                            startY = 0f,
-                            endY = 1200f
-                        )
-                    )
+                Modifier.fillMaxSize().background(
+                    Brush.verticalGradient(listOf(Color(0xFF091426), Color(0xFF05080D), CrixerBlack))
+                )
             )
         }
-
-        // Top Status Bar protective subtle vignette to ensure 100% legibility of system icons
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            if (isSimpleMode) Color(0xD905070A) else Color(0x66000000),
-                            Color.Transparent
-                        )
-                    )
-                )
-        )
-
         Scaffold(
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             containerColor = Color.Transparent,
             bottomBar = {
-                // Show bottom bar only on primary app destinations
-                val showBottomNav = currentScreen != CrixerScreen.SPLASH &&
-                    currentScreen != CrixerScreen.LEAN_BACK &&
-                    !isShowingTransition
-
-                if (showBottomNav) {
-                    CrixerBottomNavigation(
-                        currentScreen = currentScreen,
-                        displayMode = userSettings.displayMode,
-                        onNavigate = { viewModel.navigateTo(it) },
-                        onSelectMode = { viewModel.setDisplayMode(it) },
-                        onToggleMode = { viewModel.toggleDisplayMode() }
-                    )
+                if (screen != CrixerScreen.SPLASH && screen != CrixerScreen.MATCH_DETAIL &&
+                    screen != CrixerScreen.LEAN_BACK && !transition) {
+                    CrixerBottomBar(screen, viewModel)
                 }
             }
-        ) { innerPadding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            ) {
+        ) { padding ->
+            Box(Modifier.fillMaxSize().padding(padding)) {
                 AnimatedContent(
-                    targetState = currentScreen,
-                    transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(250)) },
-                    label = "screenTransition"
-                ) { screen ->
-                    when (screen) {
-                        CrixerScreen.SPLASH -> SplashScreen(
-                            onSplashFinished = { viewModel.navigateTo(CrixerScreen.HOME) }
-                        )
-                        CrixerScreen.HOME -> HomeScreen(viewModel = viewModel)
-                        CrixerScreen.MATCHES -> MatchesScreen(viewModel = viewModel)
+                    targetState = screen,
+                    transitionSpec = {
+                        fadeIn(androidx.compose.animation.core.tween(180)) togetherWith
+                            fadeOut(androidx.compose.animation.core.tween(120))
+                    },
+                    label = "crixerScreen"
+                ) { destination ->
+                    when (destination) {
+                        CrixerScreen.SPLASH -> SplashScreen { viewModel.navigateTo(CrixerScreen.HOME) }
+                        CrixerScreen.HOME -> HomeScreen(viewModel)
+                        CrixerScreen.LIVE -> HomeScreen(viewModel, fixedTab = HomeTab.LIVE)
+                        CrixerScreen.MATCHES -> MatchesScreen(viewModel)
                         CrixerScreen.INDIA -> HomeScreen(
-                            viewModel = viewModel,
-                            teamCodeFilter = "IND",
-                            sectionTitle = "INDIA"
+                            viewModel, teamCodeFilter = "IND", sectionTitle = "INDIA"
                         )
-                        CrixerScreen.MATCH_DETAIL -> LiveMatchScreen(viewModel = viewModel)
-                        CrixerScreen.SETTINGS -> SettingsScreen(viewModel = viewModel)
-                        CrixerScreen.LEAN_BACK -> LeanBackScreen(viewModel = viewModel)
-                        CrixerScreen.CRICKET_GLANCE -> CricketGlanceScreen(viewModel = viewModel)
+                        CrixerScreen.MATCH_DETAIL -> LiveMatchScreen(viewModel)
+                        CrixerScreen.SETTINGS -> SettingsScreen(viewModel)
+                        CrixerScreen.LEAN_BACK -> LeanBackScreen(viewModel)
+                        CrixerScreen.CRICKET_GLANCE -> CricketGlanceScreen(viewModel)
                     }
                 }
-
-                // Signature Liquid Glass Match Entry Transition Overlay
-                if (isShowingTransition && selectedMatch != null) {
+                if (transition && selectedMatch != null) {
                     LiquidGlassTransition(
                         match = selectedMatch!!,
-                        isRepeatVisit = isRepeatVisit,
-                        onTransitionFinished = { viewModel.onTransitionFinished() }
+                        isRepeatVisit = repeatVisit,
+                        onTransitionFinished = viewModel::onTransitionFinished
                     )
                 }
             }
@@ -220,166 +130,53 @@ fun CrixerApp(
     }
 }
 
-/**
- * Approved CRIXER V2 Bottom Navigation:
- * HOME | MATCHES | [LITE / PRO TOGGLE] | INDIA | SETTINGS
- */
 @Composable
-private fun CrixerBottomNavigation(
-    currentScreen: CrixerScreen,
-    displayMode: AppDisplayMode,
-    onNavigate: (CrixerScreen) -> Unit,
-    onSelectMode: (AppDisplayMode) -> Unit,
-    onToggleMode: () -> Unit
-) {
-    val isSimpleMode = displayMode == AppDisplayMode.SIMPLE
-
-    // Floating full-width Liquid Glass pill, matching the Home segmented-control language.
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .navigationBarsPadding()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-    ) {
+private fun CrixerBottomBar(screen: CrixerScreen, viewModel: CrixerViewModel) {
+    val items = listOf(
+        NavItem("Home", Icons.Filled.Home, Icons.Outlined.Home, CrixerScreen.HOME),
+        NavItem("Live", Icons.Filled.SportsCricket, Icons.Outlined.SportsCricket, CrixerScreen.LIVE),
+        NavItem("Matches", Icons.Filled.CalendarMonth, Icons.Outlined.CalendarMonth, CrixerScreen.MATCHES),
+        NavItem("India", Icons.Filled.Public, Icons.Outlined.Public, CrixerScreen.INDIA),
+        NavItem("Settings", Icons.Filled.Settings, Icons.Outlined.Settings, CrixerScreen.SETTINGS)
+    )
+    Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 12.dp, vertical = 6.dp)) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(30.dp))
-                .background(Color(0xE6080E17))
-                .border(
-                    width = 0.8.dp,
-                    color = Color(0xFF243449),
-                    shape = RoundedCornerShape(30.dp)
-                )
-                .padding(horizontal = 5.dp, vertical = 5.dp),
-            horizontalArrangement = Arrangement.spacedBy(1.dp),
+            Modifier.fillMaxWidth().background(Color(0xD90A1018), RoundedCornerShape(28.dp))
+                .border(1.dp, Color(0x332F435B), RoundedCornerShape(28.dp))
+                .padding(5.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-        // 1. HOME
-        BottomNavItem(
-            modifier = Modifier.weight(1f),
-            label = "Home",
-            selectedIcon = Icons.Filled.Home,
-            unselectedIcon = Icons.Outlined.Home,
-            isSelected = currentScreen == CrixerScreen.HOME,
-            onClick = { onNavigate(CrixerScreen.HOME) }
-        )
-
-        // 2. MATCHES
-        BottomNavItem(
-            modifier = Modifier.weight(1f),
-            label = "Matches",
-            selectedIcon = Icons.Filled.SportsCricket,
-            unselectedIcon = Icons.Outlined.SportsCricket,
-            isSelected = currentScreen == CrixerScreen.MATCHES || currentScreen == CrixerScreen.MATCH_DETAIL,
-            onClick = { onNavigate(CrixerScreen.MATCHES) }
-        )
-
-        // 4. INDIA — dedicated India men's international match feed
-        BottomNavItem(
-            modifier = Modifier.weight(0.9f),
-            label = "India",
-            selectedIcon = Icons.Filled.Public,
-            unselectedIcon = Icons.Outlined.Public,
-            isSelected = currentScreen == CrixerScreen.INDIA,
-            onClick = { onNavigate(CrixerScreen.INDIA) }
-        )
-
-        // 3. CENTER TOGGLE: Unmistakable SIMPLE / IMMERSIVE Mode Selector
-        Box(modifier = Modifier.weight(1.25f), contentAlignment = Alignment.Center) {
-            ModeSwitchButton(
-                isSimpleMode = isSimpleMode,
-                onSelectMode = onSelectMode
-            )
-        }
-
-        // 5. SETTINGS
-        BottomNavItem(
-            modifier = Modifier.weight(1f),
-            label = "Settings",
-            selectedIcon = Icons.Filled.Settings,
-            unselectedIcon = Icons.Outlined.Settings,
-            isSelected = currentScreen == CrixerScreen.SETTINGS,
-            onClick = { onNavigate(CrixerScreen.SETTINGS) }
-        )
+            items.forEach { item ->
+                val selected = screen == item.screen ||
+                    (screen == CrixerScreen.MATCH_DETAIL && item.screen == CrixerScreen.MATCHES)
+                Column(
+                    Modifier.weight(1f).clickable { viewModel.navigateTo(item.screen) }
+                        .padding(vertical = 7.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        if (selected) item.selected else item.unselected,
+                        contentDescription = item.label,
+                        tint = if (selected) CrixerWhite else CrixerTextSecondary,
+                        modifier = Modifier.size(19.dp)
+                    )
+                    Spacer(Modifier.size(2.dp))
+                    Text(
+                        item.label,
+                        color = if (selected) CrixerWhite else CrixerTextSecondary,
+                        fontSize = 9.sp,
+                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                    )
+                }
+            }
         }
     }
 }
 
-/**
- * CRIXER Liquid Glass Switch (Reference: liquidglassdesign.com/gallery/liquid-glass-switch):
- * Compact pill-shaped control with a single movable Liquid Glass selection surface.
- * Powered by CrixerLiquidGlassSegmentedControl for unified physical interaction language.
- */
-@Composable
-private fun ModeSwitchButton(
-    isSimpleMode: Boolean,
-    onSelectMode: (AppDisplayMode) -> Unit
-) {
-    val modeItems = remember {
-        listOf(
-            LiquidGlassSegmentItem(
-                key = AppDisplayMode.SIMPLE,
-                label = "LITE",
-                accentColor = Color(0xFF64748B),
-                testTag = "mode_switch_simple"
-            ),
-            LiquidGlassSegmentItem(
-                key = AppDisplayMode.IMMERSIVE,
-                label = "PRO",
-                accentColor = Color(0xFF38BDF8),
-                testTag = "mode_switch_immersive"
-            )
-        )
-    }
-
-    CrixerLiquidGlassSegmentedControl(
-        items = modeItems,
-        selectedKey = if (isSimpleMode) AppDisplayMode.SIMPLE else AppDisplayMode.IMMERSIVE,
-        onItemSelected = onSelectMode,
-        isSimpleMode = isSimpleMode,
-        density = SegmentDensity.COMPACT,
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag("mode_toggle_bottom_bar")
-    )
-}
-
-@Composable
-private fun BottomNavItem(
-    modifier: Modifier = Modifier,
-    label: String,
-    selectedIcon: ImageVector,
-    unselectedIcon: ImageVector,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            )
-            .padding(horizontal = 4.dp, vertical = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = if (isSelected) selectedIcon else unselectedIcon,
-            contentDescription = label,
-            tint = if (isSelected) CrixerWhite else CrixerTextSecondary,
-            modifier = Modifier.size(18.dp)
-        )
-        Spacer(modifier = Modifier.height(3.dp))
-        Text(
-            text = label,
-            color = if (isSelected) CrixerWhite else CrixerTextSecondary,
-            fontSize = 9.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-        )
-    }
-}
+private data class NavItem(
+    val label: String,
+    val selected: ImageVector,
+    val unselected: ImageVector,
+    val screen: CrixerScreen
+)
