@@ -99,10 +99,9 @@ fun LeanBackScreen(
     val inn1 = currentMatch.innings1
     val inn2 = currentMatch.innings2
 
-    // Team 1 is batting/chasing if innings 2 is underway
-    val isTeam1Batting = currentMatch.currentInningsNumber == 2 && inn2 != null
-    val team1Innings = if (isTeam1Batting) inn2 else inn1
-    val team2Innings = if (isTeam1Batting) inn1 else inn2
+    // Stable ownership: team1 -> innings1, team2 -> innings2.
+    val team1Innings = inn1
+    val team2Innings = inn2
 
     Box(
         modifier = modifier
@@ -498,108 +497,3 @@ fun LeanBackScreen(
             ) {
                 Text(
                     text = "THIS OVER",
-                    color = Color(0xFF64748B),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.5.sp
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                val activeBalls = (inn2 ?: inn1).balls
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val displayBalls = activeBalls.takeLast(6)
-                    displayBalls.forEach { ball ->
-                        val (bgColor, textColor, borderStroke) = when {
-                            ball.isWicket || ball.outcome == BallOutcome.WICKET ->
-                                Triple(CrixerRed, Color.White, Color(0xFFEF4444))
-                            ball.isBoundarySix || ball.outcome == BallOutcome.SIX ->
-                                Triple(Color(0xFF8B5CF6), Color.White, Color(0xFFA78BFA))
-                            ball.isBoundaryFour || ball.outcome == BallOutcome.FOUR ->
-                                Triple(Color(0xFF10B981), Color.White, Color(0xFF34D399))
-                            ball.outcome == BallOutcome.DOT ->
-                                Triple(Color(0x301E293B), Color(0xFF94A3B8), Color(0x35FFFFFF))
-                            else ->
-                                Triple(Color(0xFF1E293B), CrixerWhite, Color(0x50FFFFFF))
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .size(34.dp)
-                                .clip(CircleShape)
-                                .background(bgColor)
-                                .border(1.dp, borderStroke, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = ball.outcome.label,
-                                color = textColor,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Black
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // =========================================================
-        // AUTO-FADING CONTROLS OVERLAY (Exit Lean Back)
-        // =========================================================
-        AnimatedVisibility(
-            visible = showControls,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier.align(Alignment.TopStart)
-        ) {
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(Color(0xCC000000))
-                    .border(0.8.dp, Color(0x40FFFFFF), RoundedCornerShape(20.dp))
-                    .clickable { viewModel.navigateTo(CrixerScreen.MATCH_DETAIL) }
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Exit Lean Back",
-                    tint = CrixerWhite,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "Exit Lean Back",
-                    color = CrixerWhite,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-
-        AnimatedVisibility(
-            visible = showControls,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier.align(Alignment.TopEnd)
-        ) {
-            IconButton(
-                onClick = { viewModel.navigateTo(CrixerScreen.MATCH_DETAIL) },
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(Color(0xCC000000))
-                    .border(0.8.dp, Color(0x40FFFFFF), CircleShape)
-                    .testTag("exit_lean_back_close_button")
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Close Lean Back",
-                    tint = CrixerWhite,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-    }
-}
