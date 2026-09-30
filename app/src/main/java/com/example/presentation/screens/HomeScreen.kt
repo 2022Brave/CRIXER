@@ -53,7 +53,7 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                CrixerOfficialLogo(48.dp, showWordmark = true, showTagline = false, animated = false)
+                CrixerOfficialLogo(size = 48.dp, showWordmark = true, showTagline = false, animated = false)
                 LiquidGlassSurface(
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
                     tintColor = if (isPro) Color(0xFF102033) else Color(0xFF11161E),
