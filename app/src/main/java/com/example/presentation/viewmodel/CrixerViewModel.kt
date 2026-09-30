@@ -87,17 +87,21 @@ class CrixerViewModel(
         if (userSettings.value.reducedMotion) _currentScreen.value = CrixerScreen.MATCH_DETAIL
         else _isShowingTransition.value = true
     }
+
     fun onTransitionFinished() {
         _isShowingTransition.value = false
         _currentScreen.value = CrixerScreen.MATCH_DETAIL
     }
+
     fun setDisplayMode(mode: AppDisplayMode) = settingsRepository.updateDisplayMode(mode)
+
     fun toggleDisplayMode() {
         setDisplayMode(
-            if (userSettings.value.displayMode == AppDisplayMode.IMMERSIVE)
-                AppDisplayMode.SIMPLE else AppDisplayMode.IMMERSIVE
+            if (userSettings.value.displayMode == AppDisplayMode.PRO)
+                AppDisplayMode.LITE else AppDisplayMode.PRO
         )
     }
+
     fun toggleCricketGlance(enabled: Boolean) = settingsRepository.toggleCricketGlance(enabled)
     fun toggleLiveUpdates(enabled: Boolean) = settingsRepository.toggleLiveUpdates(enabled)
     fun toggleNotifyEvents(enabled: Boolean) = settingsRepository.toggleNotifyEvents(enabled)
