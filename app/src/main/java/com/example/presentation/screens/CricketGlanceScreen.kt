@@ -1,15 +1,7 @@
 package com.example.presentation.screens
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,14 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Switch
@@ -33,303 +20,76 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import java.time.LocalDate
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.domain.model.Match
-import com.example.presentation.components.LiquidGlassPulse
 import com.example.presentation.components.LiquidGlassSurface
 import com.example.presentation.viewmodel.CrixerScreen
 import com.example.presentation.viewmodel.CrixerViewModel
 import com.example.ui.theme.CrixerBlack
-import com.example.ui.theme.CrixerRed
-import com.example.ui.theme.CrixerSixGlow
 import com.example.ui.theme.CrixerTextSecondary
-import com.example.ui.theme.CrixerTextTertiary
 import com.example.ui.theme.CrixerWhite
 
-import androidx.compose.foundation.layout.statusBarsPadding
-
-
 @Composable
-fun CricketGlanceScreen(
-    viewModel: CrixerViewModel,
-    modifier: Modifier = Modifier
-) {
-    val liveMatches by viewModel.liveMatches.collectAsState()
-    val userSettings by viewModel.userSettings.collectAsState()
-    val glanceState = remember { mutableStateOf(false) }
-    var selectedMatchIndex by remember { mutableStateOf(0) }
-
-    val currentMatch = if (liveMatches.isNotEmpty()) liveMatches[selectedMatchIndex % liveMatches.size] else null
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(CrixerBlack)
-            .statusBarsPadding()
-            .padding(16.dp)
-    ) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(
-                onClick = { viewModel.navigateTo(CrixerScreen.HOME) },
-                modifier = Modifier.size(36.dp).testTag("glance_back_button")
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = CrixerWhite
-                )
+fun CricketGlanceScreen(viewModel: CrixerViewModel, modifier: Modifier = Modifier) {
+    val live by viewModel.liveMatches.collectAsState()
+    val settings by viewModel.userSettings.collectAsState()
+    Column(Modifier.fillMaxSize().background(CrixerBlack).statusBarsPadding().padding(16.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+            IconButton(onClick = { viewModel.navigateTo(CrixerScreen.HOME) }) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = CrixerWhite)
             }
-
-            Text(
-                text = "Cricket Glance & AOD",
-                color = CrixerWhite,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Box(modifier = Modifier.size(36.dp))
+            Text("CRICKET GLANCE", color = CrixerWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text("AOD", color = CrixerTextSecondary, fontSize = 10.sp)
         }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Text(
-            text = "LIVE MATCH GLANCE",
-            color = CrixerTextTertiary,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.2.sp
-        )
-
-        // Simulated Phone Device Frame (Always-On Display / Lock Screen)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .clip(RoundedCornerShape(28.dp))
-                .background(Color(0xFF030406))
-                .border(2.dp, Color(0xFF1E2838), RoundedCornerShape(28.dp))
-                .padding(20.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            if (currentMatch != null) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    // Device time/date are local UI state, never match/demo data.
+        Spacer(Modifier.height(16.dp))
+        SettingRow("Enable Cricket Glance", "Live score on supported system surfaces", settings.cricketGlanceEnabled) {
+            viewModel.toggleCricketGlance(it)
+        }
+        Spacer(Modifier.height(12.dp))
+        SettingRow("Live Updates", "Promoted live score notifications when supported", settings.liveUpdatesEnabled) {
+            viewModel.toggleLiveUpdates(it)
+        }
+        Spacer(Modifier.height(24.dp))
+        if (live.isNotEmpty()) {
+            val m = live.first()
+            val current = if (m.currentInningsNumber == 2) m.innings2 else m.innings1
+            LiquidGlassSurface(Modifier.fillMaxWidth(), isInteractive = false) {
+                Column(Modifier.padding(20.dp)) {
+                    Text("PREVIEW", color = CrixerTextSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                    Spacer(Modifier.height(8.dp))
+                    Text(m.team1.shortName + "  " + m.innings1.runs + "/" + m.innings1.wickets, color = CrixerWhite, fontSize = 22.sp, fontWeight = FontWeight.Black)
                     Text(
-                        text = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm")),
-                        color = Color(0xFFE2E8F0),
-                        fontSize = 54.sp,
-                        fontWeight = FontWeight.ExtraLight,
-                        letterSpacing = 1.sp
+                        if (m.innings2 != null) m.team2.shortName + "  " + m.innings2!!.runs + "/" + m.innings2!!.wickets else m.team2.shortName + "  —",
+                        color = CrixerWhite, fontSize = 22.sp, fontWeight = FontWeight.Black
                     )
+                    Spacer(Modifier.height(8.dp))
                     Text(
-                        text = LocalDate.now().format(DateTimeFormatter.ofPattern("EEE, dd MMM")),
-                        color = CrixerTextSecondary,
-                        fontSize = 14.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(28.dp))
-
-                    // Render only live data supplied by the selected match.
-                    DefaultAodContent(match = currentMatch)
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    // Multi-match indicator dots
-                    if (liveMatches.size > 1) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            modifier = Modifier.clickable { selectedMatchIndex++ }
-                        ) {
-                            liveMatches.forEachIndexed { idx, _ ->
-                                Box(
-                                    modifier = Modifier
-                                        .size(6.dp)
-                                        .clip(CircleShape)
-                                        .background(if (idx == selectedMatchIndex % liveMatches.size) Color(0xFF38BDF8) else Color(0xFF334155))
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(text = "Tap dots to switch live matches", color = CrixerTextTertiary, fontSize = 10.sp)
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // Glance Settings Controls (per spec screenshot 04/08)
-        LiquidGlassSurface(
-            modifier = Modifier.fillMaxWidth(),
-            isInteractive = false
-        ) {
-            Column(modifier = Modifier.padding(14.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(text = "Cricket Glance", color = CrixerWhite, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                        Text(text = "Show live match scores on Always-On Display", color = CrixerTextSecondary, fontSize = 11.sp)
-                    }
-                    Switch(
-                        checked = userSettings.cricketGlanceEnabled,
-                        onCheckedChange = { viewModel.toggleCricketGlance(it) },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = CrixerRed
-                        )
-                    )
-                }
-
-                HorizontalDivider(color = Color(0xFF1E2838), thickness = 0.5.dp, modifier = Modifier.padding(vertical = 8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "Update on key moments", color = CrixerWhite, fontSize = 13.sp)
-                    Switch(
-                        checked = userSettings.notifyMatchEvents,
-                        onCheckedChange = { viewModel.toggleNotifyEvents(it) },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = CrixerRed
-                        )
-                    )
-                }
-
-                HorizontalDivider(color = Color(0xFF1E2838), thickness = 0.5.dp, modifier = Modifier.padding(vertical = 8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "Haptic feedback", color = CrixerWhite, fontSize = 13.sp)
-                    Switch(
-                        checked = userSettings.hapticFeedback,
-                        onCheckedChange = { viewModel.toggleHaptics(it) },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = CrixerRed
-                        )
+                        m.situationSummary.ifBlank { current?.battingTeamId ?: "Live state" },
+                        color = CrixerTextSecondary, fontSize = 11.sp
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun DefaultAodContent(match: Match) {
-    val currentInnings = if (match.currentInningsNumber == 2) {
-        match.innings2
-    } else {
-        match.innings1
-    }
-
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = "${match.team1.shortName} vs ${match.team2.shortName}",
-            color = CrixerTextSecondary,
-            fontSize = 11.sp
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-
-        if (currentInnings != null) {
-            val battingTeam = if (currentInnings.battingTeamId == match.team1.id) match.team1 else match.team2
-            Text(
-                text = battingTeam.shortName,
-                color = CrixerWhite,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "${currentInnings.runs}/${currentInnings.wickets}",
-                color = CrixerWhite,
-                fontSize = 38.sp,
-                fontWeight = FontWeight.Black
-            )
-            Text(
-                text = "${currentInnings.overs} OV",
-                color = CrixerTextSecondary,
-                fontSize = 13.sp
-            )
         } else {
-            Text(
-                text = "Live score unavailable",
-                color = CrixerTextSecondary,
-                fontSize = 13.sp
-            )
-        }
-
-        if (match.situationSummary.isNotBlank()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = match.situationSummary,
-                color = Color(0xFFFFB612),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium
-            )
-        }
-
-        match.activeMoment?.let { moment ->
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = moment.title,
-                color = if (moment.isSix) CrixerSixGlow else CrixerRed,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Text("No live match is available for a glance preview.", color = CrixerTextSecondary, fontSize = 12.sp)
         }
     }
 }
-
 @Composable
-private fun LockScreenPillContent(match: Match, onClick: () -> Unit) {
-    val currentInnings = if (match.currentInningsNumber == 2) match.innings2 else match.innings1
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(24.dp))
-            .background(Color(0x99101622))
-            .border(1.dp, Color(0x66FFFFFF), RoundedCornerShape(24.dp))
-            .clickable { onClick() }
-            .padding(horizontal = 18.dp, vertical = 10.dp)
-    ) {
-        Text(
-            text = if (currentInnings != null) {
-                "${if (currentInnings.battingTeamId == match.team1.id) match.team1.shortName else match.team2.shortName} ${currentInnings.runs}/${currentInnings.wickets}"
-            } else "Live score unavailable",
-            color = CrixerWhite,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold
-        )
+private fun SettingRow(title: String, body: String, checked: Boolean, onChecked: (Boolean) -> Unit) {
+    LiquidGlassSurface(Modifier.fillMaxWidth(), isInteractive = false) {
+        Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(title, color = CrixerWhite, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Text(body, color = CrixerTextSecondary, fontSize = 10.sp)
+            }
+            Switch(
+                checked = checked, onCheckedChange = onChecked,
+                colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF38BDF8))
+            )
+        }
     }
-}
 }
