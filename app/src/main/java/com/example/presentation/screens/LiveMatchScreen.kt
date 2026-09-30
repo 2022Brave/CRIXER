@@ -273,7 +273,7 @@ fun LiveMatchScreen(
         }
 
         // Live Simulation Action Bar (to test every ball counts, six pulse, and wicket response)
-        LiveEventSimulationBar(onOutcome = { outcome -> viewModel.simulateDelivery(outcome) })
+        // Development ball simulation is intentionally not part of the user-facing match UI.
     }
 }
 
@@ -285,7 +285,7 @@ private fun SimpleScoreHeader(match: Match) {
             .padding(vertical = 8.dp)
     ) {
         val inn1 = match.innings1
-        val inn2 = match.innings2 ?: match.innings1
+        val inn2 = match.innings2
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -302,14 +302,14 @@ private fun SimpleScoreHeader(match: Match) {
                 )
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
-                        text = "${inn2.runs}/${inn2.wickets}",
+                        text = "${inn1.runs}/${inn1.wickets}",
                         color = CrixerWhite,
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Black
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "(${inn2.overs} OV)",
+                        text = "(${inn1.overs} OV)",
                         color = Color(0xFF717D8F),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
@@ -326,20 +326,29 @@ private fun SimpleScoreHeader(match: Match) {
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
                 )
-                Row(verticalAlignment = Alignment.Bottom) {
+                if (inn2 != null && (inn2.runs > 0 || inn2.wickets > 0 || inn2.overs > 0f)) {
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            text = "${inn2.runs}/${inn2.wickets}",
+                            color = Color(0xFF94A3B8),
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "(${inn2.overs} OV)",
+                            color = Color(0xFF64748B),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(bottom = 3.dp)
+                        )
+                    }
+                } else {
                     Text(
-                        text = "${inn1.runs}/${inn1.wickets}",
-                        color = Color(0xFF94A3B8),
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "(${inn1.overs} OV)",
+                        text = if (match.status == MatchStatus.UPCOMING) match.scheduledDateText ?: "Upcoming" else "Yet to bat",
                         color = Color(0xFF64748B),
                         fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(bottom = 3.dp)
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
@@ -410,17 +419,25 @@ private fun ImmersiveScoreHeader(
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(text = match.team1.shortName, color = CrixerTextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                Text(
-                    text = "${inn2.runs}/${inn2.wickets}",
-                    color = CrixerWhite,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Black
-                )
-                Text(
-                    text = "(${inn2.overs} OV)",
-                    color = CrixerTextSecondary,
-                    fontSize = 12.sp
-                )
+                if (inn2 != null && (inn2.runs > 0 || inn2.wickets > 0 || inn2.overs > 0f)) {
+                    Text(
+                        text = "${inn2.runs}/${inn2.wickets}",
+                        color = CrixerWhite,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                    Text(
+                        text = "(${inn2.overs} OV)",
+                        color = CrixerTextSecondary,
+                        fontSize = 12.sp
+                    )
+                } else {
+                    Text(
+                        text = if (match.status == MatchStatus.UPCOMING) match.scheduledDateText ?: "Upcoming" else "Yet to bat",
+                        color = CrixerTextSecondary,
+                        fontSize = 13.sp
+                    )
+                }
             }
 
             // Team 2 (First Innings)
